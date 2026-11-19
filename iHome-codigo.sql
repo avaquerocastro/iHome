@@ -285,13 +285,13 @@ DROP TABLE Estados_Presupuestos
 */
 
 -- ==========================================================================
--- 6. TABLA TIPOS_PROPIEDAD
+-- 6. TABLA TIPOS_PROPIEDADES
 -- ==========================================================================
 
-CREATE TABLE Tipos_Propiedad
+CREATE TABLE Tipos_Propiedades
 (
     COD_Tipo_Propiedad INT IDENTITY(1,1)
-        CONSTRAINT PK_Tipos_Propiedad
+        CONSTRAINT PK_Tipos_Propiedades
         PRIMARY KEY,
     Tipo_Propiedad NVARCHAR(100) NOT NULL
         CONSTRAINT UQ_Tipo_Propiedad
@@ -301,11 +301,11 @@ CREATE TABLE Tipos_Propiedad
         UNIQUE,
     Descripcion NVARCHAR(300) NULL,
     Activado BIT NOT NULL
-        CONSTRAINT DF_Tipos_Propiedad_Activado DEFAULT 1
+        CONSTRAINT DF_Tipos_Propiedades_Activado DEFAULT 1
 );
 GO
 
-INSERT INTO Tipos_Propiedad
+INSERT INTO Tipos_Propiedades
 (
     Tipo_Propiedad,
     Prefijo_Propiedad,
@@ -326,15 +326,15 @@ VALUES
 GO
 
 
-SELECT * FROM Tipos_Propiedad;
+SELECT * FROM Tipos_Propiedades;
 GO
 
 /*
-DROP TABLE Tipos_Propiedad
+DROP TABLE Tipos_Propiedades
 */
 
 
-
+/***************************************/
 
 
 
