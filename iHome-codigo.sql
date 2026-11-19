@@ -173,7 +173,7 @@ CREATE TABLE Categorias
 (
     COD_Categoria INT IDENTITY(1,1)
         CONSTRAINT PK_Categorias
-        PRIMARY KEY (COD_Categoria),
+        PRIMARY KEY,
     NombreCategoria NVARCHAR(100) NOT NULL
         CONSTRAINT UQ_Categorias_Nombre
         UNIQUE (NombreCategoria),
@@ -201,20 +201,24 @@ GO
 SELECT * FROM Categorias;
 GO
 
+/*
+DROP TABLE CATEGORIAS
+*/
+
+
 -- ==========================================================================
--- 4. TABLA ESTADOS
+-- 4. TABLA ESTADOS_PLANIFICACION
 -- ==========================================================================
 
-CREATE TABLE Estados
+CREATE TABLE Estados_Planificacion
 (
     COD_Estado INT IDENTITY(1,1)
         CONSTRAINT PK_Estados
-        PRIMARY KEY (COD_Estado),
-    NombreEstado NVARCHAR(50) NOT NULL
-        CONSTRAINT UQ_Estados_Nombre
-        UNIQUE (NombreEstado),
-    Descripcion NVARCHAR(300) NULL,
-    Activo BIT NOT NULL
+        PRIMARY KEY,
+    Estado NVARCHAR(50) NOT NULL
+        CONSTRAINT UQ_Estados
+        UNIQUE,
+    Activado BIT NOT NULL
         CONSTRAINT DF_Estados_Activo DEFAULT 1,
     Orden INT NOT NULL  
 );
