@@ -26,19 +26,19 @@ CREATE TABLE Clientes
     RGPD_Autoriza BIT NOT NULL
         CONSTRAINT DF_Clientes_RGPD DEFAULT 0,
     RGPD_Fecha DATETIME2 NULL,
-	FECHA_INICIO DATETIME2
+	Fecha_Inicio DATETIME2
 		GENERATED ALWAYS AS ROW START NOT NULL,
-	FECHA_FIN DATETIME2
+	Fecha_Fin DATETIME2
 		GENERATED ALWAYS AS ROW END NOT NULL,
 	
     PERIOD FOR SYSTEM_TIME
-		(FECHA_INICIO, FECHA_FIN)
+		(Fecha_Inicio, Fecha_Fin)
 )
 WITH
 (
 	SYSTEM_VERSIONING = ON
 	(
-		HISTORY_TABLE = dbo.CLIENTES_HISTORICO
+		HISTORY_TABLE = dbo.Clientes_Historico
 	)
 );
 GO
@@ -69,14 +69,14 @@ SELECT * FROM Clientes;
 GO
 
 /*
-ALTER TABLE CLIENTES
+ALTER TABLE Clientes
 SET (SYSTEM_VERSIONING = OFF);
 GO
 
-DROP TABLE CLIENTES;
+DROP TABLE Clientes;
 GO
 
-DROP TABLE CLIENTES_HISTORICO;
+DROP TABLE Clientes_Historico;
 GO
 */
 
@@ -89,7 +89,7 @@ CREATE TABLE Proveedores
 (
     COD_Proveedor INT IDENTITY(1,1)
         CONSTRAINT PK_Proveedores
-        PRIMARY KEY (COD_Proveedor),
+        PRIMARY KEY,
     Empresa NVARCHAR(200) NOT NULL,
     ContactoNombre NVARCHAR(100) NULL,
     ContactoApellido1 NVARCHAR(100) NULL,
@@ -105,19 +105,19 @@ CREATE TABLE Proveedores
     RGPD_Autoriza BIT NOT NULL
         CONSTRAINT DF_Proveedores_RGPD DEFAULT 0,
     RGPD_Fecha DATETIME2 NULL,
-    FECHA_INICIO DATETIME2
+    Fecha_Inicio DATETIME2
 		GENERATED ALWAYS AS ROW START NOT NULL,
-	FECHA_FIN DATETIME2
+	Fecha_Fin DATETIME2
 		GENERATED ALWAYS AS ROW END NOT NULL,
 	
     PERIOD FOR SYSTEM_TIME
-		(FECHA_INICIO, FECHA_FIN)
+		(Fecha_Inicio, Fecha_Fin)
 )
 WITH
 (
 	SYSTEM_VERSIONING = ON
 	(
-		HISTORY_TABLE = dbo.PROVEEDORES_HISTORICO
+		HISTORY_TABLE = dbo.Proveedores_Historico
 	)
 );
 GO
@@ -153,123 +153,164 @@ SELECT * FROM Proveedores;
 GO
 
 /*
-ALTER TABLE PROVEEDORES
+ALTER TABLE Proveedores
 SET (SYSTEM_VERSIONING = OFF);
 GO
 
-DROP TABLE PROVEEDORES;
+DROP TABLE Proveedores;
 GO
 
-DROP TABLE PROVEEDORES_HISTORICO;
+DROP TABLE Proveedores_Historico;
 GO
 */
 
 
 -- ==========================================================================
--- 3. TABLA CATEGORIAS
+-- 3. TABLA CATEGORIAS_ACTIVIDADES
 -- ==========================================================================
 
-CREATE TABLE Categorias
+CREATE TABLE Categorias_Actividades
 (
-    COD_Categoria INT IDENTITY(1,1)
-        CONSTRAINT PK_Categorias
+    COD_Categoria_Act INT IDENTITY(1,1)
+        CONSTRAINT PK_Categorias_Actividades
         PRIMARY KEY,
-    NombreCategoria NVARCHAR(100) NOT NULL
-        CONSTRAINT UQ_Categorias_Nombre
-        UNIQUE (NombreCategoria),
-    Descripcion NVARCHAR(300) NULL,
-    Activa BIT NOT NULL
-        CONSTRAINT DF_Categorias_Activa DEFAULT 1
+    Categoria_Act NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Categorias_Plan
+        UNIQUE,
+    Activada BIT NOT NULL
+        CONSTRAINT DF_Categorias_Actividades_Activada DEFAULT 1
 );
 GO
 
-INSERT INTO Categorias
+INSERT INTO Categorias_Actividades
 (
-    NombreCategoria,
-    Descripcion,
-    Activa
+    Categoria_Act,
+    Activada
 )
 VALUES
-('Mantenimiento', 'Preventivo o correctivo', 1),
-('Inspección', NULL, 1),
-('Instalación', NULL, 1),
-('Limpieza', NULL, 1),
-('Sustitución', NULL, 1),
-('Reforma', NULL, 0);
+('Mantenimiento', 1),
+('Inspección', 1),
+('Instalación', 1),
+('Limpieza', 1),
+('Sustitución', 1),
+('Reforma', 0);
 GO
 
-SELECT * FROM Categorias;
+SELECT * FROM Categorias_Actividades;
 GO
 
 /*
-DROP TABLE CATEGORIAS
+DROP TABLE Categorias_Actividades
 */
 
 
 -- ==========================================================================
--- 4. TABLA ESTADOS_PLANIFICACION
+-- 4. TABLA ESTADOS_ACTIVIDADES
 -- ==========================================================================
 
-CREATE TABLE Estados_Planificacion
+CREATE TABLE Estados_Actividades
 (
-    COD_Estado INT IDENTITY(1,1)
-        CONSTRAINT PK_Estados
+    COD_Estado_Act INT IDENTITY(1,1)
+        CONSTRAINT PK_Estados_Actividades
         PRIMARY KEY,
-    Estado NVARCHAR(50) NOT NULL
-        CONSTRAINT UQ_Estados
+    Estado_Act NVARCHAR(50) NOT NULL
+        CONSTRAINT UQ_Estado_Act
         UNIQUE,
-    Activado BIT NOT NULL
-        CONSTRAINT DF_Estados_Activo DEFAULT 1,
-    Orden INT NOT NULL  
+    Activado BIT
+        CONSTRAINT DF_Estados_Actividades_Activado DEFAULT 1,
+    Orden INT NOT NULL
 );
 GO
 
-INSERT INTO Estados
+INSERT INTO Estados_Actividades
 (
-    NombreEstado,
-    Descripcion,
-    Activo,
+    Estado_Act,
+    Activado,
     Orden
 )
 VALUES
-('Pendiente', NULL, 1, 1),
-('Programado', NULL, 1, 2),
-('En curso', NULL, 1, 3),
-('Finalizado', NULL, 1, 4),
-('Cancelado', NULL, 1, 5),
-('Aplazado', NULL, 1, 6);
+('Pendiente', 1, 1),
+('Programado', 1, 2),
+('En curso', 1, 3),
+('Finalizado', 1, 4),
+('Cancelado', 1, 5),
+('Aplazado', 1, 6);
 GO
 
-SELECT * FROM Estados;
+SELECT * FROM Estados_Actividades;
 GO
+
+/*
+DROP TABLE Estados_Actividades
+*/
 
 -- ==========================================================================
--- 5. TABLA TIPOS_PROPIEDAD
+-- 5. TABLA ESTADOS_PRESUPUESTOS
+-- ==========================================================================
+
+CREATE TABLE Estados_Presupuestos
+(
+    COD_Estado_Pre INT IDENTITY(1,1)
+        CONSTRAINT PK_Estados_Presupuestos
+        PRIMARY KEY,
+    Estado_Pre NVARCHAR(50) NOT NULL
+        CONSTRAINT UQ_Estados
+        UNIQUE,
+    Activado BIT
+        CONSTRAINT DF_Estados_Presupuestos_Activado DEFAULT 1,
+    Orden INT NOT NULL
+);
+GO
+
+INSERT INTO Estados_Presupuestos
+(
+    Estado_Pre,
+    Activado,
+    Orden
+)
+VALUES
+('Solicitado', 1, 1),
+('Entregado', 1, 2),
+('En revisión', 1, 3),
+('Aceptado', 1, 4),
+('Rechazado', 1, 5),
+('Postergado', 1, 6);
+GO
+
+SELECT * FROM Estados_Presupuestos;
+GO
+
+/*
+DROP TABLE Estados_Presupuestos
+*/
+
+-- ==========================================================================
+-- 6. TABLA TIPOS_PROPIEDAD
 -- ==========================================================================
 
 CREATE TABLE Tipos_Propiedad
 (
-    COD_TipoPropiedad INT IDENTITY(1,1)
+    COD_Tipo_Propiedad INT IDENTITY(1,1)
         CONSTRAINT PK_Tipos_Propiedad
-        PRIMARY KEY (COD_TipoPropiedad),
-    NombreTipo NVARCHAR(100) NOT NULL
-        CONSTRAINT UQ_Tipos_Propiedad_Nombre
-        UNIQUE (NombreTipo),
-    Prefijo VARCHAR(3) NOT NULL
-        CONSTRAINT UQ_Tipos_Propiedad_Prefijo
-        UNIQUE (Prefijo),
+        PRIMARY KEY,
+    Tipo_Propiedad NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipo_Propiedad
+        UNIQUE,
+    Prefijo_Propiedad VARCHAR(3) NOT NULL
+        CONSTRAINT UQ_Prefijo_Propiedad
+        UNIQUE,
     Descripcion NVARCHAR(300) NULL,
-    Activo BIT NOT NULL
-        CONSTRAINT DF_Tipos_Propiedad_Activo DEFAULT 1
+    Activado BIT NOT NULL
+        CONSTRAINT DF_Tipos_Propiedad_Activado DEFAULT 1
 );
 GO
 
 INSERT INTO Tipos_Propiedad
 (
-    NombreTipo,
-    Prefijo,
+    Tipo_Propiedad,
+    Prefijo_Propiedad,
     Descripcion,
-    Activo
+    Activado
 )
 VALUES
 ('Piso', 'PSO', 'Vivienda situada en un edificio residencial', 1),
@@ -288,8 +329,18 @@ GO
 SELECT * FROM Tipos_Propiedad;
 GO
 
+/*
+DROP TABLE Tipos_Propiedad
+*/
+
+
+
+
+
+
+
 -- ==========================================================================
--- 6. TABLA PROPIEDADES
+-- 7. TABLA PROPIEDADES
 -- ==========================================================================
 
 CREATE TABLE Propiedades
@@ -359,7 +410,7 @@ GO
 
 
 -- ==========================================================================
--- 7. TABLA ESPACIOS
+-- 8. TABLA ESPACIOS
 -- ==========================================================================
 
 
@@ -419,7 +470,7 @@ ORDER BY E.COD_Propiedad, E.COD_Espacio;
 GO*/
 
 -- ==========================================================================
--- 8. TABLA SISTEMAS_SERVICIOS
+-- 9. TABLA SISTEMAS_SERVICIOS
 -- ==========================================================================
 
 CREATE TABLE Sistemas_Servicios
@@ -488,7 +539,7 @@ GO*/
 
 
 -- ==========================================================================
--- 9. TABLA PLANIFICACION
+-- 10. TABLA PLANIFICACION
 -- ==========================================================================
 
 CREATE TABLE Planificacion
@@ -546,7 +597,7 @@ GO
 
 
 -- ==========================================================================
--- 10. TABLA DOCUMENTOS
+-- 11. TABLA DOCUMENTOS
 -- ==========================================================================
 
 CREATE TABLE Documentos
@@ -585,7 +636,7 @@ SELECT * FROM Documentos;
 GO
 
 -- ==========================================================================
--- 11. TABLA PRESUPUESTO
+-- 12. TABLA PRESUPUESTO
 -- ==========================================================================
 
 CREATE TABLE Presupuestos
@@ -638,33 +689,7 @@ SELECT * FROM Presupuestos;
 GO
 
 -- ==========================================================================
--- 12. TABLA TIPOS_DOCUMENTOS
+-- 13. TABLA TIPOS_DOCUMENTOS
 -- ==========================================================================
 
--- ==========================================================================
--- 13. TABLA HISTORIAL_ESTADOS_ACTIVIDAD
--- ==========================================================================
 
-/*CREATE TABLE Historial_Estados
-(
-    COD_Historial INT IDENTITY(1,1)
-        CONSTRAINT PK_Historial_Estados
-        PRIMARY KEY (COD_Historial),
-    COD_Actividad INT NOT NULL
-        CONSTRAINT FK_Historial_Actividades
-        FOREIGN KEY (COD_Actividad)
-        REFERENCES Planificacion(COD_Actividad),
-    COD_Estado INT NOT NULL
-        CONSTRAINT FK_Historial_Estados
-        FOREIGN KEY (COD_Estado)
-        REFERENCES Estados(COD_Estado),
-    FechaCambio DATETIME2 NOT NULL,
-    Notas NVARCHAR(MAX) NULL,   
-);
-GO*/
-
-SELECT * FROM Historial_Estados;
-GO
-
-/*DROP TABLE Historial_Estados;
-GO*/
