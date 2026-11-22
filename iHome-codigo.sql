@@ -30,8 +30,7 @@ GO
 CREATE TABLE Clientes
 (
     COD_Cliente INT IDENTITY(1,1)
-        CONSTRAINT PK_Clientes
-        PRIMARY KEY,
+        CONSTRAINT PK_Clientes PRIMARY KEY,
     ContactoNombre NVARCHAR(100) NOT NULL,
     ContactoApellido1 NVARCHAR(100) NOT NULL,
     ContactoApellido2 NVARCHAR(100) NULL,
@@ -43,15 +42,15 @@ CREATE TABLE Clientes
     Ciudad NVARCHAR(200) NULL,
     Provincia NVARCHAR(200) NULL,
     RGPD_Autoriza BIT NOT NULL
-        CONSTRAINT DF_Clientes_RGPD DEFAULT 0,
+        CONSTRAINT DF_CLIENTES_RGPD_Autoriza DEFAULT 0,
     RGPD_Fecha DATETIME2 NULL,
-	Fecha_Inicio DATETIME2
-		GENERATED ALWAYS AS ROW START NOT NULL,
-	Fecha_Fin DATETIME2
+	RegistroInicial DATETIME2
+        GENERATED ALWAYS AS ROW START NOT NULL,
+	RegistroFinal DATETIME2
 		GENERATED ALWAYS AS ROW END NOT NULL,
 	
     PERIOD FOR SYSTEM_TIME
-		(Fecha_Inicio, Fecha_Fin)
+		(RegistroInicial, RegistroFinal)
 )
 WITH
 (
@@ -62,7 +61,14 @@ WITH
 );
 GO
 
-INSERT INTO Clientes
+-- DNI/NIF único aunque tengamos varios valores NULL
+CREATE UNIQUE INDEX UX_CLIENTES_DNI_NIF
+ON CLIENTES (DNI_NIF)
+WHERE DNI_NIF IS NOT NULL;
+GO
+
+
+INSERT INTO CLIENTES
 (
     ContactoNombre,
     ContactoApellido1,
@@ -78,10 +84,48 @@ INSERT INTO Clientes
     RGPD_Fecha
 )
 VALUES
-('Vera', 'Castro', 'Gutiérrez', '672958367', 'veracastro@gmail.com', '61234678Y', 'Calle Madrid', '28041', 'Madrid', 'Madrid', 1, '20230902'),
-('Javier', 'Sánchez', 'Rivera', '689463778', 'javiersanchez@gmail.com', '87632816T', 'Calle Lisboa', '28014', 'Leganés', 'Madrid', 1, '20220417'),
-('Francisco', 'Vaquero', 'Castro', '645277890', 'franciscovaquero@gmail.com', '47284617D', 'Avenida Fuenlabrada', '28911', 'Málaga', 'Málaga', 0, NULL),
-('Marilyn', 'Rivera', null, '924784556', 'mrivera@gmail.com', 'Y7234819D', 'Calle Universidad', '28892', 'Bilbao', 'País Vasco', 1, getdate());
+(
+    'Vera',
+    'Castro',
+    'Gutiérrez',
+    '672958367',
+    'veracastro@gmail.com',
+    '61234678Y',
+    'Calle Madrid',
+    '28041',
+    'Madrid',
+    'Madrid',
+    1,
+    '2023-09-02'
+),
+(
+    'Javier',
+    'Sánchez',
+    'Rivera',
+    '689463778',
+    'javiersanchez@gmail.com',
+    '87632816T',
+    'Calle Lisboa',
+    '28014',
+    'Leganés',
+    'Madrid',
+    1,
+    '2022-04-17'
+),
+(
+    'Francisco',
+    'Vaquero',
+    'Castro',
+    '645277890',
+    'franciscovaquero@gmail.com',
+    '47284617D',
+    'Avenida Fuenlabrada',
+    '28911',
+    'Málaga',
+    'Málaga',
+    0,
+    NULL
+);
 GO
 
 SELECT * FROM Clientes;
@@ -107,8 +151,7 @@ GO
 CREATE TABLE Proveedores
 (
     COD_Proveedor INT IDENTITY(1,1)
-        CONSTRAINT PK_Proveedores
-        PRIMARY KEY,
+        CONSTRAINT PK_Proveedores PRIMARY KEY,
     Empresa NVARCHAR(200) NOT NULL,
     ContactoNombre NVARCHAR(100) NULL,
     ContactoApellido1 NVARCHAR(100) NULL,
@@ -122,15 +165,15 @@ CREATE TABLE Proveedores
     Provincia NVARCHAR(200) NULL,
     Notas NVARCHAR(MAX) NULL,
     RGPD_Autoriza BIT NOT NULL
-        CONSTRAINT DF_Proveedores_RGPD DEFAULT 0,
+        CONSTRAINT DF_PROVEEDORES_RGPD_Autoriza DEFAULT 0,
     RGPD_Fecha DATETIME2 NULL,
-    Fecha_Inicio DATETIME2
+    RegistroInicial DATETIME2
 		GENERATED ALWAYS AS ROW START NOT NULL,
-	Fecha_Fin DATETIME2
+	RegistroFinal DATETIME2
 		GENERATED ALWAYS AS ROW END NOT NULL,
 	
     PERIOD FOR SYSTEM_TIME
-		(Fecha_Inicio, Fecha_Fin)
+		(RegistroInicial, RegistroFinal)
 )
 WITH
 (
@@ -141,7 +184,14 @@ WITH
 );
 GO
 
-INSERT INTO Proveedores
+-- NIF único aunque tengamos varios valores NULL
+CREATE UNIQUE INDEX UX_PROVEEDORES_NIF
+ON PROVEEDORES (NIF)
+WHERE NIF IS NOT NULL;
+GO
+
+
+INSERT INTO PROVEEDORES
 (
     Empresa,
     ContactoNombre,
@@ -159,13 +209,118 @@ INSERT INTO Proveedores
     RGPD_Fecha
 )
 VALUES
-('Los Gemelos', 'Juan José', 'Escribano', 'Cabello', '677528478', NULL, '1816363F', 'Lago Maracaibo 13 D', '28018', 'Madrid', 'Madrid', 'Saco 1m3 - www.sacoslosgemelos.com', 0, NULL),
-('Saltoki', 'Daniel', 'García', 'Velasco', '606582493', 'dgarciav@saltoki.es', 'A82825456', 'Calle Río Bembezar 4', '28906', 'Getafe', 'Madrid', 'www.saltoki.es', 1, '2025-07-27'),
-('Dormitorum', NULL, NULL, NULL, '600999897', NULL, NULL, 'Av. Rey Juan Carlos I 69', '28916', 'Leganés', 'Madrid', 'www.dormitorum.es', 1, '2025-10-06'),
-('Bosch España', NULL, NULL, NULL, '976305713', NULL, NULL, NULL, NULL, NULL, NULL, 'www.bosch-home.es', 0, NULL),
-('IKEA', NULL, NULL, NULL, '900400922', NULL, NULL, NULL, NULL, 'Leganés', 'Madrid', NULL, 0, NULL),
-('PVC3', 'Verónica', 'García', 'Díaz', '925513637', 'pvc3@pvc3.com', NULL, 'Calle Nuevo Toledo 19', '45200', 'Illescas', 'Toledo', NULL, 1, '2025-07-15'),
-('JCMLsoluciones.es', 'Fransuani', 'Álvarez', NULL, '602654868', NULL, 'B19963594', 'Calle de las Dehesillas 2 Local 1', '28981', 'Parla', 'Madrid', 'Contratista', 1, '2025-06-20');
+(
+    'Los Gemelos',
+    'Juan José',
+    'Escribano',
+    'Cabello',
+    '677528478',
+    NULL,
+    '1816363F',
+    'Lago Maracaibo 13 D',
+    '28018',
+    'Madrid',
+    'Madrid',
+    'Saco 1m3 - www.sacoslosgemelos.com',
+    0,
+    NULL
+),
+(
+    'Saltoki',
+    'Daniel',
+    'García',
+    'Velasco',
+    '606582493',
+    'dgarciav@saltoki.es',
+    'A82825456',
+    'Calle Río Bembezar 4',
+    '28906',
+    'Getafe',
+    'Madrid',
+    'www.saltoki.es',
+    1,
+    '2025-07-27'
+),
+(
+    'Dormitorum',
+    NULL,
+    NULL,
+    NULL,
+    '600999897',
+    NULL,
+    NULL,
+    'Av Rey Juan Carlos I 69',
+    '28916',
+    'Leganés',
+    'Madrid',
+    'www.dormitorum.es',
+    1,
+    '2025-10-06'
+),
+(
+    'Bosch España',
+    NULL,
+    NULL,
+    NULL,
+    '976305713',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    'www.bosch-home.es',
+    0,
+    NULL
+),
+(
+    'IKEA',
+    NULL,
+    NULL,
+    NULL,
+    '900400922',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    'Leganés',
+    'Madrid',
+    NULL,
+    0,
+    NULL
+),
+(
+    'PVC3',
+    'Verónica',
+    'García',
+    'Díaz',
+    '925513637',
+    'pvc3@pvc3.com',
+    NULL,
+    'Calle Nuevo Toledo 19',
+    '45200',
+    'Illescas',
+    'Toledo',
+    NULL,
+    1,
+    '2025-07-15'
+),
+(
+    'JCMLsoluciones.es',
+    'Fransuani',
+    'Álvarez',
+    NULL,
+    '602654868',
+    NULL,
+    'B19963594',
+    'Calle de las Dehesillas 2 Local 1',
+    '28981',
+    'Parla',
+    'Madrid',
+    'Contratista',
+    1,
+    '2025-06-20'
+);
 GO
 
 SELECT * FROM Proveedores;
@@ -184,365 +339,656 @@ GO
 */
 
 
--- ==========================================================================
--- 3. TABLA CATEGORIAS_ACTIVIDADES
--- ==========================================================================
+-- -------------------------------------------------------------------
+--      2.3. ESTADOS_PLANIFICACION 
+-- -------------------------------------------------------------------
 
-CREATE TABLE Categorias_Actividades
+CREATE TABLE Estados_Planificacion
 (
-    COD_Categoria_Act INT IDENTITY(1,1)
-        CONSTRAINT PK_Categorias_Actividades
-        PRIMARY KEY,
-    Categoria_Act NVARCHAR(100) NOT NULL
-        CONSTRAINT UQ_Categorias_Plan
-        UNIQUE,
-    Activada BIT NOT NULL
-        CONSTRAINT DF_Categorias_Actividades_Activada DEFAULT 1
-);
-GO
-
-INSERT INTO Categorias_Actividades
-(
-    Categoria_Act,
-    Activada
-)
-VALUES
-('Mantenimiento', 1),
-('Inspección', 1),
-('Instalación', 1),
-('Limpieza', 1),
-('Sustitución', 1),
-('Reforma', 0);
-GO
-
-SELECT * FROM Categorias_Actividades;
-GO
-
-/*
-DROP TABLE Categorias_Actividades
-*/
-
-
--- ==========================================================================
--- 4. TABLA ESTADOS_ACTIVIDADES
--- ==========================================================================
-
-CREATE TABLE Estados_Actividades
-(
-    COD_Estado_Act INT IDENTITY(1,1)
-        CONSTRAINT PK_Estados_Actividades
-        PRIMARY KEY,
-    Estado_Act NVARCHAR(50) NOT NULL
-        CONSTRAINT UQ_Estado_Act
-        UNIQUE,
-    Activado BIT
-        CONSTRAINT DF_Estados_Actividades_Activado DEFAULT 1,
+    COD_EstadoPlan INT IDENTITY(1,1)
+        CONSTRAINT PK_Estados_Planificacion PRIMARY KEY,
+    EstadoPlan NVARCHAR(30) NOT NULL
+        CONSTRAINT UQ_Estados_Planificacion_EstadoPlan UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Estados_Planificacion_Activo DEFAULT 1,
     Orden INT NOT NULL
 );
 GO
 
-INSERT INTO Estados_Actividades
+INSERT INTO Estados_Planificacion
 (
-    Estado_Act,
-    Activado,
+    EstadoPlan,
     Orden
 )
 VALUES
-('Pendiente', 1, 1),
-('Programado', 1, 2),
-('En curso', 1, 3),
-('Finalizado', 1, 4),
-('Cancelado', 1, 5),
-('Aplazado', 1, 6);
+    ('PENDIENTE', 1),
+    ('PROGRAMADO', 2),
+    ('EN CURSO', 3),
+    ('FINALIZADO', 4),
+    ('CANCELADO', 5),
+    ('APLAZADO', 6);
 GO
 
-SELECT * FROM Estados_Actividades;
+SELECT *
+FROM Estados_Planificacion
+ORDER BY Orden;
 GO
 
-/*
-DROP TABLE Estados_Actividades
-*/
 
--- ==========================================================================
--- 5. TABLA ESTADOS_PRESUPUESTOS
--- ==========================================================================
+
+
+-- -------------------------------------------------------------------
+--      2.4. ESTADOS_PRESUPUESTOS
+-- -------------------------------------------------------------------
 
 CREATE TABLE Estados_Presupuestos
 (
-    COD_Estado_Pre INT IDENTITY(1,1)
-        CONSTRAINT PK_Estados_Presupuestos
-        PRIMARY KEY,
-    Estado_Pre NVARCHAR(50) NOT NULL
-        CONSTRAINT UQ_Estados
-        UNIQUE,
-    Activado BIT
-        CONSTRAINT DF_Estados_Presupuestos_Activado DEFAULT 1,
+    COD_EstadoPresu INT IDENTITY(1,1)
+        CONSTRAINT PK_Estados_Presupuestos PRIMARY KEY,
+    EstadoPresu NVARCHAR(30) NOT NULL
+        CONSTRAINT UQ_Estados_Presupuestos_EstadoPresu UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Estados_Presupuestos_Activo DEFAULT 1,
     Orden INT NOT NULL
 );
 GO
 
 INSERT INTO Estados_Presupuestos
 (
-    Estado_Pre,
-    Activado,
+    EstadoPresu,
     Orden
 )
 VALUES
-('Solicitado', 1, 1),
-('Entregado', 1, 2),
-('En revisión', 1, 3),
-('Aceptado', 1, 4),
-('Rechazado', 1, 5),
-('Postergado', 1, 6);
+    ('RECIBIDO', 1),
+    ('ENTREGADO', 2),
+    ('EN REVISIÓN', 3),
+    ('ACEPTADO', 4),
+    ('RECHAZADO', 5),
+    ('POSTERGADO', 6);
 GO
 
-SELECT * FROM Estados_Presupuestos;
+SELECT *
+FROM Estados_Presupuestos
+ORDER BY Orden;
 GO
 
-/*
-DROP TABLE Estados_Presupuestos
-*/
 
--- ==========================================================================
--- 6. TABLA TIPOS_PROPIEDADES
--- ==========================================================================
+
+-- -------------------------------------------------------------------
+--      2.5. CATEGORIAS_SERVICIOS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Categorias_Servicios
+(
+    COD_CatServicio INT IDENTITY(1,1)
+        CONSTRAINT PK_Categorias_Servicios PRIMARY KEY,
+    CatServicio NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Categorias_Servicios_CatServicio UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Categorias_Servicios_Activo DEFAULT 1
+);
+GO
+
+INSERT INTO Categorias_Servicios
+(
+    CatServicio
+)
+VALUES
+    ('ACABADOS'), ('CARPINTERIA'), ('CONSERVACION'), ('CONSTRUCCION'),
+    ('GESTION'), ('INSTALACION'), ('LIMPIEZA'), ('LOGISTICA'),
+    ('MANTENIMIENTO'), ('PROFESIONAL'), ('REFORMA'), ('REPARACION'),
+    ('SUSTITUCION'), ('TECNICO');
+GO
+
+SELECT *
+FROM Categorias_Servicios
+ORDER BY CatServicio;
+GO
+
+
+
+-- -------------------------------------------------------------------
+--      2.6. CATEGORIAS_SISTEMAS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Categorias_Sistemas
+(
+    COD_CatSistema INT IDENTITY(1,1)
+        CONSTRAINT PK_Categorias_Sistemas PRIMARY KEY,
+    CatSistema NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Categorias_Sistemas_CatSistema UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Categorias_Sistemas_Activo DEFAULT 1
+);
+GO
+
+INSERT INTO Categorias_Sistemas
+(
+    CatSistema
+)
+VALUES
+    ('CLIMATIZACION_VENTILACION'),
+    ('CONSTRUCTIVOS'),
+    ('ELECTRICIDAD_ILUMINACION'),
+    ('ELECTRODOMESTICOS_EQUIPAMIENTO'),
+    ('FONTANERIA_SANEAMIENTO'),
+    ('SEGURIDAD_CONTROL'),
+    ('TELECOMUNICACIONES');
+GO
+
+SELECT *
+FROM Categorias_Sistemas
+ORDER BY CatSistema;
+GO
+
+
+
+-- -------------------------------------------------------------------
+--      2.7. TIPOS_ACTIVIDADES
+-- -------------------------------------------------------------------
+
+CREATE TABLE Tipos_Actividades
+(
+    COD_TipoActividad INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Actividades PRIMARY KEY,
+    TipoActividad NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Actividades_TipoActividad UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Actividades_Activo DEFAULT 1
+);
+GO
+
+INSERT INTO Tipos_Actividades
+(
+    TipoActividad
+)
+VALUES
+    ('ALMACENAR'), ('ANALIZAR'), ('COBRAR'), ('COMPRAR'), ('COMPROBAR'),
+    ('CONTACTAR'), ('COORDINAR'), ('CITAR'), ('COTIZAR'), ('DISEÑAR'),
+    ('DOCUMENTAR'), ('EJECUTAR'), ('ENTREGAR'), ('ENVIAR'), ('INSPECCIONAR'),
+    ('INSTALAR'), ('LIMPIAR'), ('MEDIR'), ('MODIFICAR'), ('NOTIFICAR'),
+    ('ORGANIZAR'), ('PAGAR'), ('PINTAR'), ('PLANIFICAR'), ('PRESUPUESTAR'),
+    ('RECOGER'), ('REPARAR'), ('REVISAR'), ('SOLICITAR'), ('SUPERVISAR'),
+    ('SUSTITUIR'), ('TRAMITAR'), ('VERIFICAR'), ('VISITAR');
+GO
+    
+
+SELECT *
+FROM Tipos_Actividades
+ORDER BY TipoActividad;
+GO
+
+
+
+
+-- -------------------------------------------------------------------
+--      2.8. TIPOS_DOCUMENTOS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Tipos_Documentos
+(
+    COD_TipoDoc INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Documentos PRIMARY KEY,
+    TipoDoc NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Documentos_TipoDoc UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Documentos_Activo DEFAULT 1
+);
+GO
+
+INSERT INTO Tipos_Documentos
+(
+    TipoDoc
+)
+VALUES
+    ('ACTA'), ('ALBARAN'), ('AUTORIZACION'), ('BOLETIN'), ('CATALOGO'),
+    ('CARPETA'), ('CERTIFICADO'), ('CONTRATO'), ('DECLARACION_RESPONSABLE'),
+    ('FACTURA'), ('FACTURA_PROFORMA'), ('FACTURA_RECTIFICATIVA'),
+    ('FICHA_TECNICA'), ('FOTOGRAFIAS'), ('GARANTIA'), ('INFORME_TECNICO'),
+    ('JUSTIFICANTE_PAGO'), ('LICENCIA'), ('MANUAL'), ('MEMORIA_TECNICA'),
+    ('ORDEN_COMPRA'), ('ORDEN_TRABAJO'), ('PLANOS'), ('PRESUPUESTO'),
+    ('RECIBO'), ('RGPD');
+GO
+
+SELECT *
+FROM Tipos_Documentos
+ORDER BY TipoDoc;
+GO
+
+
+
+-- -------------------------------------------------------------------
+--      2.9. TIPOS_ESPACIOS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Tipos_Espacios
+(
+    COD_TipoEspacio INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Espacios PRIMARY KEY,
+    TipoEspacio NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Espacios_TipoEspacio UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Espacios_Activo DEFAULT 1
+);
+GO
+
+INSERT INTO Tipos_Espacios
+(
+    TipoEspacio,
+    Activo
+)
+VALUES
+    ('ACCESO', 1), ('ALMACEN', 1), ('AZOTEA', 1), ('BAÑO', 1),
+    ('COCINA', 1), ('COMEDOR', 1), ('CUARTO_CALDERAS', 1),
+    ('CUARTO_CONTADORES', 1), ('CUARTO_ELECTRICO', 1),
+    ('DESPACHO', 1), ('DORMITORIO', 1), ('GARAJE', 0),
+    ('OFICINA', 1), ('PASILLO', 1), ('PATIO', 1), ('PORTAL', 1),
+    ('SALON', 1), ('SALA_TECNICA', 1), ('TALLER', 1),
+    ('TERRAZA', 1), ('TRASTERO', 1), ('VESTIDOR', 1);
+GO
+
+SELECT *
+FROM Tipos_Espacios
+ORDER BY TipoEspacio;
+GO
+
+
+
+-- -------------------------------------------------------------------
+--      2.10. TIPOS_PROPIEDADES
+-- -------------------------------------------------------------------
 
 CREATE TABLE Tipos_Propiedades
 (
-    COD_Tipo_Propiedad INT IDENTITY(1,1)
-        CONSTRAINT PK_Tipos_Propiedades
-        PRIMARY KEY,
-    Tipo_Propiedad NVARCHAR(100) NOT NULL
-        CONSTRAINT UQ_Tipo_Propiedad
-        UNIQUE,
-    Prefijo_Propiedad VARCHAR(3) NOT NULL
-        CONSTRAINT UQ_Prefijo_Propiedad
-        UNIQUE,
-    Descripcion NVARCHAR(300) NULL,
-    Activado BIT NOT NULL
-        CONSTRAINT DF_Tipos_Propiedades_Activado DEFAULT 1
+    COD_TipoPropiedad INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Propiedades PRIMARY KEY,
+    TipoPropiedad NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Propiedades_TipoPropiedad UNIQUE,
+    PrefijoPropiedad NVARCHAR(3) NOT NULL
+        CONSTRAINT UQ_Tipos_Propiedades_Prefijo UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Propiedades_Activo DEFAULT 1
 );
 GO
 
 INSERT INTO Tipos_Propiedades
 (
-    Tipo_Propiedad,
-    Prefijo_Propiedad,
-    Descripcion,
-    Activado
+    TipoPropiedad,
+    PrefijoPropiedad,
+    Activo
 )
 VALUES
-('Piso', 'PSO', 'Vivienda situada en un edificio residencial', 1),
-('Chalet', 'CHL', 'Vivienda unifamiliar independiente o pareada', 1),
-('Casa', 'CSA', 'Vivienda unifamiliar', 1),
-('Apartamento', 'APT', 'Vivienda de dimensiones reducidas', 1),
-('Oficina', 'OFI', 'Espacio destinado a actividades profesionales', 1),
-('Local comercial', 'LOC', 'Espacio destinado a actividades comerciales', 1),
-('Espacio efimero', 'EFM', 'Espacio temporal destinado a eventos, comercio o actividades', 1),
-('Nave industrial', 'IND', 'Espacio destinado a actividades industriales', 1),
-('Edificio', 'EDF', 'Inmueble compuesto por varias unidades o espacios', 1),
-('Garaje', 'GAR', 'Espacio destinado al estacionamiento de vehículos', 0);
+    ('APARTAMENTO', 'APT', 1),
+    ('CASA', 'CSA', 1),
+    ('CHALET', 'CHL', 1),
+    ('COMERCIAL', 'CMR', 1),
+    ('EDIFICIO', 'EDF', 1),
+    ('EFIMERO', 'EFM', 1),
+    ('GARAJE', 'GAR', 0),
+    ('INDUSTRIAL', 'IND', 1),
+    ('OFICINA', 'OFI', 1),
+    ('PISO', 'PSO', 1);
+GO
+
+SELECT *
+FROM Tipos_Propiedades
+ORDER BY TipoPropiedad;
 GO
 
 
-SELECT * FROM Tipos_Propiedades;
+
+-- -------------------------------------------------------------------
+--      2.11. TIPOS_SERVICIOS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Tipos_Servicios
+(
+    COD_TipoServicio INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Servicios PRIMARY KEY,
+    COD_CatServicio INT NOT NULL
+        CONSTRAINT FK_Tipos_Servicios_Categorias FOREIGN KEY
+        REFERENCES Categorias_Servicios,
+    TipoServicio NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Servicios_TipoServicio UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Servicios_Activo DEFAULT 1,
+);
 GO
 
-/*
-DROP TABLE Tipos_Propiedades
-*/
+-- SEGURIDAD será el único tipo de servicio desactivado
+INSERT INTO Tipos_Servicios
+(
+    COD_CatServicio,
+    TipoServicio,
+    Activo
+)
+SELECT
+    C.COD_CatServicio,
+    V.TipoServicio,
+    CASE
+        WHEN V.TipoServicio = N'SEGURIDAD' THEN 0
+        ELSE 1
+    END
+FROM
+(
+    VALUES
+        (N'ACABADOS', N'PINTURA'),
+        (N'ACABADOS', N'REVESTIMIENTOS'),
+
+        (N'CARPINTERIA', N'CARPINTERIA'),
+        (N'CARPINTERIA', N'CERRAJERIA'),
+        (N'CARPINTERIA', N'MONTAJE_MOBILIARIO'),
+
+        (N'CONSERVACION', N'INSPECCION_PROPIEDAD'),
+
+        (N'CONSTRUCCION', N'AISLAMIENTO_ACUSTICO'),
+        (N'CONSTRUCCION', N'AISLAMIENTO_TERMICO'),
+        (N'CONSTRUCCION', N'IMPERMEABILIZACION'),
+
+        (N'GESTION', N'GESTION_COMPRAS'),
+        (N'GESTION', N'GESTION_GARANTIAS'),
+        (N'GESTION', N'GESTION_LICENCIAS'),
+        (N'GESTION', N'GESTION_PERMISOS'),
+        (N'GESTION', N'GESTION_RESIDUOS'),
+
+        (N'INSTALACION', N'CLIMATIZACION'),
+        (N'INSTALACION', N'CONDUCTOS'),
+        (N'INSTALACION', N'DOMOTICA'),
+        (N'INSTALACION', N'ELECTRICIDAD'),
+        (N'INSTALACION', N'ELECTRODOMESTICOS'),
+        (N'INSTALACION', N'FOTOVOLTAICA'),
+        (N'INSTALACION', N'FONTANERIA'),
+        (N'INSTALACION', N'INSTALACION_PERSIANAS'),
+        (N'INSTALACION', N'TELECOMUNICACIONES'),
+
+        (N'LOGISTICA', N'ALQUILER_MAQUINARIA'),
+        (N'LOGISTICA', N'RETIRADA_EQUIPOS'),
+        (N'LOGISTICA', N'SUMINISTRO_MATERIALES'),
+        (N'LOGISTICA', N'TRANSPORTE_MATERIALES'),
+
+        (N'MANTENIMIENTO', N'CORRECTIVO'),
+        (N'MANTENIMIENTO', N'FILTROS'),
+        (N'MANTENIMIENTO', N'PREDICTIVO'),
+        (N'MANTENIMIENTO', N'PREVENTIVO'),
+
+        (N'PROFESIONAL', N'ASESORAMIENTO_TECNICO'),
+        (N'PROFESIONAL', N'CERTIFICACION_ENERGETICA'),
+        (N'PROFESIONAL', N'COORDINACION_SEGURIDAD'),
+        (N'PROFESIONAL', N'DIRECCION_FACULTATIVA'),
+        (N'PROFESIONAL', N'DIRECCION_OBRA'),
+        (N'PROFESIONAL', N'ELABORACION_PRESUPUESTOS'),
+        (N'PROFESIONAL', N'ESTUDIO_VIABILIDAD'),
+        (N'PROFESIONAL', N'LEVANTAMIENTO_PLANOS'),
+        (N'PROFESIONAL', N'REDACCION_INFORMES'),
+        (N'PROFESIONAL', N'REDACCION_PROYECTOS'),
+        (N'PROFESIONAL', N'TASACIONES'),
+
+        (N'REFORMA', N'REFORMA_INTEGRAL'),
+        (N'REFORMA', N'REFORMA_PARCIAL'),
+
+        (N'TECNICO', N'AUDITORIA_ENERGETICA'),
+        (N'TECNICO', N'CERTIFICACION_INSTALACIONES'),
+        (N'TECNICO', N'INSPECCION_TECNICA'),
+        (N'TECNICO', N'MEDICIONES'),
+        (N'TECNICO', N'VISITA_TECNICA'),
+
+        (N'INSTALACION', N'SEGURIDAD')
+) AS V (CatServicio, TipoServicio)
+INNER JOIN Categorias_Servicios AS C
+    ON C.CatServicio = V.CatServicio;
+GO
+
+-- Comprobar los registros
+/* SELECT
+    TS.COD_TipoServicio,
+    CS.CatServicio,
+    TS.TipoServicio,
+    TS.Activo
+FROM TIPOS_SERVICIOS AS TS
+INNER JOIN CATEGORIAS_SERVICIOS AS CS
+    ON TS.COD_CatServicio = CS.COD_CatServicio
+ORDER BY
+    CS.CatServicio,
+    TS.TipoServicio;
+GO */
+
+SELECT * FROM TIPOS_SERVICIOS
+
+-- -------------------------------------------------------------------
+--      2.12. TIPOS_SISTEMAS
+-- -------------------------------------------------------------------
+
+CREATE TABLE Tipos_Sistemas
+(
+    COD_TipoSistema INT IDENTITY(1,1)
+        CONSTRAINT PK_Tipos_Sistemas PRIMARY KEY,
+    COD_CatSistema INT NOT NULL
+        CONSTRAINT FK_Tipos_Sistemas_Categorias FOREIGN KEY
+        REFERENCES CATEGORIAS_SISTEMAS,
+    TipoSistema NVARCHAR(100) NOT NULL
+        CONSTRAINT UQ_Tipos_Sistemas_TipoSistema UNIQUE,
+    Activo BIT NOT NULL
+        CONSTRAINT DF_Tipos_Sistemas_Activo DEFAULT 1,
+);
+GO
 
 
-/***************************************/
+
+-- ALARMA será el único tipo de sistema desactivado
+INSERT INTO TIPOS_SISTEMAS
+(
+    COD_CatSistema,
+    TipoSistema,
+    Activo
+)
+SELECT
+    C.COD_CatSistema,
+    V.TipoSistema,
+    CASE
+        WHEN V.TipoSistema = N'ALARMA' THEN 0
+        ELSE 1
+    END
+FROM
+(
+    VALUES
+        (N'CLIMATIZACION_VENTILACION', N'AEROTERMIA'),
+        (N'CLIMATIZACION_VENTILACION', N'AIRE_ACONDICIONADO'),
+        (N'CLIMATIZACION_VENTILACION', N'BOMBA_CALOR'),
+        (N'CLIMATIZACION_VENTILACION', N'CALEFACCION'),
+        (N'CLIMATIZACION_VENTILACION', N'RECUPERADOR_CALOR'),
+        (N'CLIMATIZACION_VENTILACION', N'SUELO_RADIANTE'),
+        (N'CLIMATIZACION_VENTILACION', N'VENTILACION_MECANICA'),
+
+        (N'CONSTRUCTIVOS', N'CARPINTERIA'),
+        (N'CONSTRUCTIVOS', N'IMPERMEABILIZACION'),
+
+        (N'ELECTRICIDAD_ILUMINACION', N'INSTALACION_FOTOVOLTAICA'),
+
+        (N'ELECTRODOMESTICOS_EQUIPAMIENTO', N'CAMPANA_EXTRACTORA'),
+        (N'ELECTRODOMESTICOS_EQUIPAMIENTO', N'ELECTRODOMESTICO'),
+        (N'ELECTRODOMESTICOS_EQUIPAMIENTO', N'TERMO_ELECTRICO'),
+
+        (N'FONTANERIA_SANEAMIENTO', N'FILTRACION_AGUA'),
+        (N'FONTANERIA_SANEAMIENTO', N'RIEGO_AUTOMATICO'),
+
+        (N'SEGURIDAD_CONTROL', N'ALARMA'),
+        (N'SEGURIDAD_CONTROL', N'CONTROL_ACCESO'),
+        (N'SEGURIDAD_CONTROL', N'DETECCION_INCENDIOS'),
+
+        (N'CLIMATIZACION_VENTILACION', N'FILTRACION_AIRE')
+) AS V (CatSistema, TipoSistema)
+INNER JOIN CATEGORIAS_SISTEMAS AS C
+    ON C.CatSistema = V.CatSistema;
+GO
 
 
+-- Comprobar los registros
+/* SELECT
+    TS.COD_TipoSistema,
+    CS.CatSistema,
+    TS.TipoSistema,
+    TS.Activo
+FROM TIPOS_SISTEMAS AS TS
+INNER JOIN CATEGORIAS_SISTEMAS AS CS
+    ON TS.COD_CatSistema = CS.COD_CatSistema
+ORDER BY
+    CS.CatSistema,
+    TS.TipoSistema;
+GO */
+
+select * from TIPOS_SISTEMAS
 
 
--- ==========================================================================
--- 7. TABLA PROPIEDADES
--- ==========================================================================
+-- -------------------------------------------------------------------
+--      2.13. PROPIEDADES
+-- -------------------------------------------------------------------
 
 CREATE TABLE Propiedades
 (
     COD_Propiedad INT IDENTITY(1,1)
-        CONSTRAINT PK_Propiedades
-        PRIMARY KEY (COD_Propiedad),
+        CONSTRAINT PK_Propiedades PRIMARY KEY,
+    COD_Cliente INT NOT NULL
+        CONSTRAINT FK_Propiedades_Clientes FOREIGN KEY
+        REFERENCES Clientes,
     COD_TipoPropiedad INT NOT NULL
-        CONSTRAINT FK_Propiedades_Tipos_Propiedad
-        FOREIGN KEY (COD_TipoPropiedad)
-        REFERENCES Tipos_Propiedad(COD_TipoPropiedad),
-    RefPropiedad NVARCHAR(20) NULL,
-    NombrePropiedad NVARCHAR(200) NULL,
+        CONSTRAINT FK_Propiedades_Tipos FOREIGN KEY
+        REFERENCES Tipos_Propiedades,
+    RefPropiedad NVARCHAR(30) NULL,
     DireccionPropiedad NVARCHAR(300) NULL,
     CodigoPostal NVARCHAR(10) NULL,
     Ciudad NVARCHAR(200) NULL,
-    Provincia NVARCHAR(200) NULL,
-    COD_Cliente INT NOT NULL
-        CONSTRAINT FK_Propiedades_Clientes
-        FOREIGN KEY (COD_Cliente)
-        REFERENCES Clientes(COD_Cliente)
+    Provincia NVARCHAR(200) NULL   
 );
 GO
 
-CREATE OR ALTER TRIGGER TR_Propiedades_GenerarRef
+-- crear referencia única cuando contiene un valor 
+CREATE UNIQUE INDEX UX_Propiedades_RefPropiedad
+ON Propiedades (RefPropiedad)
+WHERE RefPropiedad IS NOT NULL;
+GO
+
+-- trigger para generar la referencia de propiedad automáticamente al insertar un nuevo registro 
+-- puede insertar varias propiedades a la vez
+CREATE TRIGGER TRG_Propiedades_RefPropiedad
 ON Propiedades
 AFTER INSERT
-
 AS
 BEGIN
     SET NOCOUNT ON;
 
     UPDATE P
-    SET RefPropiedad =
-        TP.Prefijo + '-' +
-        RIGHT('000' + CAST(P.COD_Propiedad AS VARCHAR(10)), 3)
-
-    FROM Propiedades P
-    INNER JOIN inserted I
+    SET RefPropiedad = CONCAT(
+        'C', I.COD_Cliente,
+        '-', TP.PrefijoPropiedad,
+        '-', I.COD_Propiedad
+    )
+    FROM Propiedades AS P
+    INNER JOIN INSERTED AS I
         ON P.COD_Propiedad = I.COD_Propiedad
-    INNER JOIN Tipos_Propiedad TP
-        ON P.COD_TipoPropiedad = TP.COD_TipoPropiedad
-    WHERE P.RefPropiedad IS NULL
+    INNER JOIN Tipos_Propiedades AS TP
+        ON I.COD_TipoPropiedad = TP.COD_TipoPropiedad;
 END;
 GO
 
 INSERT INTO Propiedades
 (
+    COD_Cliente,
     COD_TipoPropiedad,
-    NombrePropiedad,
     DireccionPropiedad,
     CodigoPostal,
     Ciudad,
-    Provincia,
-    COD_Cliente
+    Provincia
 )
 VALUES
-(4, NULL, 'Calle Madrid 23', NULL, 'Madrid', 'Madrid', 2),
-(1, NULL, 'Lisboa 8', '28617', 'Getafe', 'Madrid', 1),
-(2, 'Los Almendros', 'Ave Rey Juan Carlos I 17', '28045', 'Madrid', 'Madrid', 3),
-(1, NULL, 'Carabelos 57', '28014', 'Madrid', 'Madrid', 1);
+    (2, 3, 'Calle Madrid 23', NULL, 'Madrid', 'Madrid'),
+    (1, 1, 'Lisboa 8', '28617', 'Getafe', 'Madrid'),
+    (3, 2, 'Ave Rey Juan Carlos I 17', '28045', 'Madrid', 'Madrid'),
+    (1, 1, 'Carabelos 57', '28014', 'Madrid', 'Madrid');
 GO
 
 
-SELECT * FROM Propiedades;
-GO
+/* SELECT
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    C.ContactoNombre,
+    C.ContactoApellido1,
+    TP.TipoPropiedad,
+    P.DireccionPropiedad,
+    P.CodigoPostal,
+    P.Ciudad,
+    P.Provincia
+FROM PROPIEDADES AS P
+INNER JOIN CLIENTES AS C
+    ON P.COD_Cliente = C.COD_Cliente
+INNER JOIN TIPOS_PROPIEDADES AS TP
+    ON P.COD_TipoPropiedad = TP.COD_TipoPropiedad
+ORDER BY P.COD_Propiedad;
+GO */
+
+select * from PROPIEDADES
 
 
--- ==========================================================================
--- 8. TABLA ESPACIOS
--- ==========================================================================
 
+-- -------------------------------------------------------------------
+--      2.14. ESPACIOS
+-- -------------------------------------------------------------------
 
 CREATE TABLE Espacios
 (
     COD_Espacio INT IDENTITY(1,1)
-        CONSTRAINT PK_Espacios
-        PRIMARY KEY (COD_Espacio),
-    NombreEspacio NVARCHAR(100) NOT NULL,
-    Area DECIMAL(10,2) NULL,
-    Volumen DECIMAL(10,2) NULL,
-    Descripcion NVARCHAR(MAX) NULL,
+        CONSTRAINT PK_Espacios PRIMARY KEY,
     COD_Propiedad INT NOT NULL
-        CONSTRAINT FK_Espacios_Propiedades
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES Propiedades(COD_Propiedad)
+        CONSTRAINT FK_Espacios_PROPIEDADES FOREIGN KEY
+        REFERENCES PROPIEDADES,
+    COD_TipoEspacio INT NOT NULL
+        CONSTRAINT FK_Espacios_TIPOS FOREIGN KEY
+        REFERENCES TIPOS_ESPACIOS,
+    RefEspacio NVARCHAR(30) NULL,
+    Area DECIMAL(10,2) NULL
+        CONSTRAINT CK_Espacios_Area
+        CHECK (Area IS NULL OR Area >= 0),
+    Volumen DECIMAL(10,2) NULL
+        CONSTRAINT CK_Espacios_Volumen
+        CHECK (Volumen IS NULL OR Volumen >= 0)  
 );
 GO
 
-INSERT INTO Espacios
-(
-    NombreEspacio,
-    Area,
-    Volumen,
-    Descripcion,
-    COD_Propiedad
-)
-VALUES
-('Salón', 25.5, 63.75, NULL, 1),
-('Cocina', 12, 30, 'Tipo americana', 1),
-('Dormitorio principal', 15, 37.5, 'Con armario empotrado', 1),
-('Dormitorio 1', 17.3, 43.25, NULL, 2),
-('Dormitorio 2', 13.2, 33, NULL, 2),
-('Aseo', 3.5, 8.75, NULL, 2),
-('Baño', 6, 15, NULL, 2),
-('Cocina', 12, 30, NULL, 3),
-('Salón', 23.4, 58.5, NULL, 3),
-('Despacho', 16.8, 42, NULL, 3);
+-- Referencia única cuando contiene un valor
+CREATE UNIQUE INDEX UX_Espacios_RefEspacio
+ON Espacios (RefEspacio)
+WHERE RefEspacio IS NOT NULL;
 GO
 
-SELECT * FROM Espacios;
-GO
 
-/* Consulta para ver a qué propiedad pertenece cada espacio:
-SELECT
-    E.COD_Espacio,
-    E.NombreEspacio,
-    E.Area,
-    E.Volumen,
-    E.Descripcion,
-    E.COD_Propiedad,
-    P.RefPropiedad
-FROM Espacios E
-INNER JOIN Propiedades P
-    ON E.COD_Propiedad = P.COD_Propiedad
-ORDER BY E.COD_Propiedad, E.COD_Espacio;
-GO*/
 
--- ==========================================================================
--- 9. TABLA SISTEMAS_SERVICIOS
--- ==========================================================================
 
-CREATE TABLE Sistemas_Servicios
-(
-    COD_Sistema INT IDENTITY(1,1)
-        CONSTRAINT PK_Sistemas_Servicios
-        PRIMARY KEY (COD_Sistema),
-    NombreSistema NVARCHAR(200) NOT NULL,
-    DatosTecnicos XML NULL,
-    Notas NVARCHAR(MAX) NULL,
-    FechaInstalacion DATETIME2 NULL,
-    COD_Proveedor INT NOT NULL
-        CONSTRAINT FK_Sistemas_Proveedores
-        FOREIGN KEY (COD_Proveedor)
-        REFERENCES Proveedores(COD_Proveedor),
-    COD_Espacio INT NOT NULL
-        CONSTRAINT FK_Sistemas_Espacios
-        FOREIGN KEY (COD_Espacio)
-        REFERENCES Espacios(COD_Espacio)
-);
-GO
 
-INSERT INTO Sistemas_Servicios
-(
-    NombreSistema,
-    DatosTecnicos,
-    Notas,
-    FechaInstalacion,
-    COD_Proveedor,
-    COD_Espacio
-)
-VALUES
-('Recuperador de calor', null, 'SIBER',  '20260820', 2, 9)
-;
-GO
 
-SELECT * FROM Sistemas_Servicios;
-GO
+/* Consulta para ver a qué propiedad pertenece cada espacio*/
 
-UPDATE Sistemas_Servicios
-SET DatosTecnicos =
-    '<Sistema>
-        <Marca>SIBER</Marca>
-        <Modelo>DF EVO 2</Modelo>
-        <Tipo>Recuperador de calor</Tipo>
-        <Caracteristicas>
-            <CaudalMax>200 m3/h</CaudalMax>
-            <Domotica>Conectividad mediante KNX - Modbus</Domotica>
-            <ClaseFiltro>Coarse 65% (G4)</ClaseFiltro>
-        </Caracteristicas>
-    </Sistema>'
-WHERE COD_Sistema = 1;
-GO
+-- -------------------------------------------------------------------
+--      2.15. DOCUMENTOS
+-- -------------------------------------------------------------------
+
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      2.16. SERVICIOS
+-- -------------------------------------------------------------------
+
+
+
+-- -------------------------------------------------------------------
+--      2.17. SISTEMAS
+-- -------------------------------------------------------------------
+
+
+
 
 /*Consulta para recuperar la marca:
 SELECT
@@ -556,159 +1002,29 @@ AS Marca
 FROM Sistemas_Servicios;
 GO*/
 
-
--- ==========================================================================
--- 10. TABLA PLANIFICACION
--- ==========================================================================
-
-CREATE TABLE Planificacion
-(
-    COD_Actividad INT IDENTITY(1,1)
-        CONSTRAINT PK_Planificacion
-        PRIMARY KEY (COD_Actividad),
-    Actividad NVARCHAR(200) NOT NULL,
-    COD_Categoria INT NOT NULL
-        CONSTRAINT FK_Planificacion_Categorias
-        FOREIGN KEY (COD_Categoria)
-        REFERENCES Categorias(COD_Categoria),
-    COD_Estado INT NOT NULL
-        CONSTRAINT FK_Planificacion_Estados
-        FOREIGN KEY (COD_Estado)
-        REFERENCES Estados(COD_Estado),
-    FechaInicial DATETIME2 NULL,
-    FechaFinal DATETIME2 NULL,
-    ProxRecordatorio DATETIME2 NULL,
-    COD_Propiedad INT NOT NULL
-        CONSTRAINT FK_Planificacion_Propiedades
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES Propiedades(COD_Propiedad),
-    COD_Sistema INT NULL
-        CONSTRAINT FK_Planificacion_Sistemas
-        FOREIGN KEY (COD_Sistema)
-        REFERENCES Sistemas_Servicios(COD_Sistema),
-    COD_Espacio INT NULL
-        CONSTRAINT FK_Planificacion_Espacios
-        FOREIGN KEY (COD_Espacio)
-        REFERENCES Espacios(COD_Espacio)    
-);
-GO
-
-INSERT INTO Planificacion
-(
-     Actividad,
-     COD_Categoria, 
-     COD_Estado,
-     FechaInicial,
-     FechaFinal,
-     ProxRecordatorio,
-     COD_Propiedad,
-     COD_Sistema,
-     COD_Espacio
-)
-VALUES
-(
-    'Cambio de filtros', 5, 2, '20261001', '20261001', '20270315', 1, 1, 8
-);
-GO
-
-SELECT * FROM Planificacion;
-GO
+-- -------------------------------------------------------------------
+--      2.18. PRESUPUESTOS
+-- -------------------------------------------------------------------
 
 
--- ==========================================================================
--- 11. TABLA DOCUMENTOS
--- ==========================================================================
-
-CREATE TABLE Documentos
-(
-    COD_Documento INT IDENTITY(1,1)
-        CONSTRAINT PK_Documentos
-        PRIMARY KEY (COD_Documento),
-    TipoDocumento NVARCHAR(50) NOT NULL,
-    URL_Documento NVARCHAR(4000) NULL,
-    COD_Actividad INT NULL
-        CONSTRAINT FK_Documentos_Actividades
-        FOREIGN KEY (COD_Actividad)
-        REFERENCES Planificacion(COD_Actividad),
-    COD_Sistema INT NOT NULL
-        CONSTRAINT FK_Documentos_Sistemas
-        FOREIGN KEY (COD_Sistema)
-        REFERENCES Sistemas_Servicios(COD_Sistema)
-);
-GO
 
 
-INSERT INTO Documentos
-(
-    TipoDocumento,
-    URL_Documento,
-    COD_Actividad,
-    COD_Sistema
-)
-VALUES
-('Ficha técnica', 'https://drive.google.com/file/d/1-XTAVVK0gIGJFhcizQ2dAVrzQothN-dm/view?usp=sharing', null, 1),
-('Ficha técnica', 'https://drive.google.com/file/d/1stBMSeuwY69RS7OyLim7mubKe4k32e0u/view?usp=sharing', 1, 1);
-GO
 
 
-SELECT * FROM Documentos;
-GO
-
--- ==========================================================================
--- 12. TABLA PRESUPUESTO
--- ==========================================================================
-
-CREATE TABLE Presupuestos
-(
-    COD_Presupuesto INT IDENTITY(1,1)
-        CONSTRAINT PK_Presupuesto
-        PRIMARY KEY (COD_Presupuesto),
-    Descripcion NVARCHAR(300) NOT NULL,
-    Cantidad DECIMAL(8,2) NULL
-        CONSTRAINT CK_Presupuesto_Cantidad
-        CHECK (Cantidad >= 0),
-    Precio DECIMAL(12,2) NULL
-        CONSTRAINT CK_Presupuesto_Precio
-        CHECK (Precio >= 0),
-    ImporteTotal AS
-        (CONVERT(DECIMAL(14,2), Cantidad * Precio)) PERSISTED,
-    COD_Estado INT NOT NULL
-        CONSTRAINT FK_Presupuestos_Estados
-        FOREIGN KEY (COD_Estado)
-        REFERENCES Estados(COD_Estado),
-    TiendaOnline NVARCHAR(4000) NULL,
-    COD_Documento INT NULL
-        CONSTRAINT FK_Presupuesto_Documentos
-        FOREIGN KEY (COD_Documento)
-        REFERENCES Documentos(COD_Documento),
-    COD_Propiedad INT NOT NULL
-        CONSTRAINT FK_Presupuesto_Propiedades
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES Propiedades(COD_Propiedad)
-);
-GO
+-- -------------------------------------------------------------------
+--      2.19. PLANIFICACION
+-- -------------------------------------------------------------------
 
 
-INSERT INTO Presupuestos
-(
-    Descripcion,
-    Cantidad,
-    Precio,
-    COD_Estado,
-    TiendaOnline,
-    COD_Documento,
-    COD_Propiedad
-)
-VALUES
-('FILTRO COMBINADO G4/F7 (COARSE 65% + EPM1 55%)', 1, (72.11*1.21), 3, 'https://www.siberzone.es/tienda/filtro-combinado-g4f7-coarse-65-epm155', 2, 2)
-;
-GO
 
-SELECT * FROM Presupuestos;
-GO
 
--- ==========================================================================
--- 13. TABLA TIPOS_DOCUMENTOS
--- ==========================================================================
+
+
+
+-- ===================================================================
+--      3. PROCEDIMIENTOS ALMACENADOS
+-- ===================================================================
+
+
 
 
