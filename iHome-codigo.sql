@@ -959,21 +959,164 @@ ON Espacios (RefEspacio)
 WHERE RefEspacio IS NOT NULL;
 GO
 
+-- importante permitir inserciones múltiples y generar una referencia para cada espacio
+CREATE TRIGGER TRG_Espacios_RefEspacio
+ON Espacios
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE E
+    SET RefEspacio = CONCAT(
+        'P', I.COD_Propiedad,
+        '-', TE.TipoEspacio,
+        '-', I.COD_Espacio
+    )
+    FROM Espacios AS E
+    INNER JOIN INSERTED AS I
+        ON E.COD_Espacio = I.COD_Espacio
+    INNER JOIN TIPOS_ESPACIOS AS TE
+        ON I.COD_TipoEspacio = TE.COD_TipoEspacio;
+END;
+GO
+
+INSERT INTO ESPACIOS
+(
+    COD_Propiedad,
+    COD_TipoEspacio,
+    Area,
+    Volumen
+)
+VALUES
+    (2, 6, 18.00, 45.00), (2, 4, 4.50, 11.25), (2, 13, 9.00, 22.50),
+    (1, 4, 6.00, 15.00), (1, 5, 16.00, 40.00), (3, 11, 14.00, 35.00),
+    (3, 5, 12.00, 30.00), (3, 4, 5.00, 12.50), (3, 6, 20.00, 50.00);
+GO
+
+-- consulta de comprobación de los registros insertados
+SELECT
+    E.COD_Espacio,
+    E.RefEspacio,
+    E.COD_Propiedad,
+    TP.TipoPropiedad,
+    E.COD_TipoEspacio,
+    TE.TipoEspacio,
+    E.Area,
+    E.Volumen
+FROM Espacios AS E
+INNER JOIN Propiedades AS P
+    ON E.COD_Propiedad = P.COD_Propiedad
+INNER JOIN Tipos_Propiedades AS TP
+    ON P.COD_TipoPropiedad = TP.COD_TipoPropiedad
+INNER JOIN TIPOS_ESPACIOS AS TE
+    ON E.COD_TipoEspacio = TE.COD_TipoEspacio
+ORDER BY
+    E.COD_Propiedad,
+    E.COD_Espacio;
+GO
+
+select * from ESPACIOS
 
 
-
-
-
-/* Consulta para ver a qué propiedad pertenece cada espacio*/
 
 -- -------------------------------------------------------------------
 --      2.15. DOCUMENTOS
 -- -------------------------------------------------------------------
 
+/* CREATE TABLE DOCUMENTOS
+(
+    COD_Doc INT IDENTITY(1,1)
+        CONSTRAINT PK_DOCUMENTOS PRIMARY KEY,
 
+    COD_Propiedad INT NOT NULL,
+    COD_TipoDoc INT NOT NULL,
 
+    RefDoc NVARCHAR(50) NULL,
 
+    URL_Doc NVARCHAR(4000) NOT NULL,
 
+    CONSTRAINT FK_DOCUMENTOS_PROPIEDADES
+        FOREIGN KEY (COD_Propiedad)
+        REFERENCES PROPIEDADES (COD_Propiedad),
+
+    CONSTRAINT FK_DOCUMENTOS_TIPOS
+        FOREIGN KEY (COD_TipoDoc)
+        REFERENCES TIPOS_DOCUMENTOS (COD_TipoDoc)
+);
+GO
+
+-- Referencia única cuando contiene un valor
+CREATE UNIQUE INDEX UX_DOCUMENTOS_RefDoc
+ON DOCUMENTOS (RefDoc)
+WHERE RefDoc IS NOT NULL;
+GO
+
+-- trigger admite inserciones múltiples y genera una referencia para cada documento
+CREATE TRIGGER TRG_DOCUMENTOS_RefDoc
+ON DOCUMENTOS
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE D
+    SET RefDoc = CONCAT(
+        'P', I.COD_Propiedad,
+        '-', TD.TipoDoc,
+        '-', I.COD_Doc
+    )
+    FROM DOCUMENTOS AS D
+    INNER JOIN INSERTED AS I
+        ON D.COD_Doc = I.COD_Doc
+    INNER JOIN TIPOS_DOCUMENTOS AS TD
+        ON I.COD_TipoDoc = TD.COD_TipoDoc;
+END;
+GO
+
+INSERT INTO DOCUMENTOS
+(
+    COD_Propiedad,
+    COD_TipoDoc,
+    URL_Doc
+)
+SELECT
+    V.COD_Propiedad,
+    TD.COD_TipoDoc,
+    V.URL_Doc
+FROM
+(
+    VALUES
+    (
+        1,
+        N'CARPETA',
+        N'https://drive.google.com/drive/folders/1la8GaonwtKXaj-9YakJkK_3XddA6WER4?usp=sharing'
+    ),
+    (
+        1,
+        N'FICHA_TECNICA',
+        N'https://drive.google.com/file/d/1stBMSeuwY69RS7OyLim7mubKe4k32e0u/view?usp=sharing'
+    )
+) AS V (COD_Propiedad, TipoDoc, URL_Doc)
+INNER JOIN TIPOS_DOCUMENTOS AS TD
+    ON TD.TipoDoc = V.TipoDoc;
+GO
+
+-- comprobar los registros insertados
+SELECT
+    D.COD_Doc,
+    D.RefDoc,
+    D.COD_Propiedad,
+    P.RefPropiedad,
+    TD.TipoDoc,
+    D.URL_Doc
+FROM DOCUMENTOS AS D
+INNER JOIN PROPIEDADES AS P
+    ON D.COD_Propiedad = P.COD_Propiedad
+INNER JOIN TIPOS_DOCUMENTOS AS TD
+    ON D.COD_TipoDoc = TD.COD_TipoDoc
+ORDER BY D.COD_Doc;
+GO */
 
 
 
@@ -982,12 +1125,281 @@ GO
 -- -------------------------------------------------------------------
 
 
+-- restricción de la tabla Espacios para que la clave foránea compuesta de la tabla SERVICIOS funcione correctamente
+/* ALTER TABLE ESPACIOS
+ADD CONSTRAINT UQ_ESPACIOS_COD_Espacio_Propiedad
+UNIQUE (COD_Espacio, COD_Propiedad);
+GO
+
+CREATE TABLE SERVICIOS
+(
+    COD_Servicio INT IDENTITY(1,1)
+        CONSTRAINT PK_SERVICIOS PRIMARY KEY,
+
+    COD_Propiedad INT NOT NULL,
+    COD_Espacio INT NULL,
+    COD_Proveedor INT NOT NULL,
+    COD_TipoServicio INT NOT NULL,
+
+    RefServicio NVARCHAR(30) NULL,
+    Especificaciones XML NULL,
+    COD_Doc INT NULL,
+
+    CONSTRAINT FK_SERVICIOS_PROPIEDADES
+        FOREIGN KEY (COD_Propiedad)
+        REFERENCES PROPIEDADES (COD_Propiedad),
+
+    CONSTRAINT FK_SERVICIOS_ESPACIOS
+        FOREIGN KEY (COD_Espacio, COD_Propiedad)
+        REFERENCES ESPACIOS (COD_Espacio, COD_Propiedad),
+
+    CONSTRAINT FK_SERVICIOS_PROVEEDORES
+        FOREIGN KEY (COD_Proveedor)
+        REFERENCES PROVEEDORES (COD_Proveedor),
+
+    CONSTRAINT FK_SERVICIOS_TIPOS
+        FOREIGN KEY (COD_TipoServicio)
+        REFERENCES TIPOS_SERVICIOS (COD_TipoServicio),
+
+    CONSTRAINT FK_SERVICIOS_DOCUMENTOS
+        FOREIGN KEY (COD_Doc)
+        REFERENCES DOCUMENTOS (COD_Doc)
+);
+GO
+
+-- Referencia única cuando contiene un valor
+CREATE UNIQUE INDEX UX_SERVICIOS_RefServicio
+ON SERVICIOS (RefServicio)
+WHERE RefServicio IS NOT NULL;
+GO
+
+-- trigger admite inserciones múltiples y genera una referencia para cada servicio
+CREATE TRIGGER TRG_SERVICIOS_RefServicio
+ON SERVICIOS
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE S
+    SET RefServicio = CONCAT(
+        'PR', I.COD_Proveedor,
+        '-TS', I.COD_TipoServicio,
+        '-S', I.COD_Servicio
+    )
+    FROM SERVICIOS AS S
+    INNER JOIN INSERTED AS I
+        ON S.COD_Servicio = I.COD_Servicio;
+END;
+GO
+
+/* drop table SERVICIOS
+
+DROP TRIGGER IF EXISTS TRG_SERVICIOS_RefServicio;
+GO
+
+SELECT *
+FROM sys.triggers
+WHERE name = 'TRG_SERVICIOS_RefServicio';
+GO */
+
+INSERT INTO SERVICIOS
+(
+    COD_Propiedad,
+    COD_Espacio,
+    COD_Proveedor,
+    COD_TipoServicio,
+    Especificaciones,
+    COD_Doc
+)
+SELECT
+    1,
+    NULL,
+    P.COD_Proveedor,
+    TS.COD_TipoServicio,
+    CAST(N'
+    <Detalles>
+        <Horario>Mañanas de 9:00h a 13:00h. Tardes de 16:00h a 19:00h</Horario>
+        <Caracteristicas>Saco 1m3 37 euros IVA incluido</Caracteristicas>
+    </Detalles>' AS XML),
+    NULL
+FROM PROVEEDORES AS P
+CROSS JOIN TIPOS_SERVICIOS AS TS
+WHERE P.Empresa = N'Los Gemelos'
+  AND TS.TipoServicio = N'SUMINISTRO_MATERIALES';
+GO
+
+INSERT INTO SERVICIOS
+(
+    COD_Propiedad,
+    COD_Espacio,
+    COD_Proveedor,
+    COD_TipoServicio,
+    Especificaciones,
+    COD_Doc
+)
+SELECT
+    1,
+    E.COD_Espacio,
+    P.COD_Proveedor,
+    TS.COD_TipoServicio,
+    CAST(N'
+    <Detalles>
+        <Caracteristicas>
+            FILTRO F7 (1 FIL. ISO EPM1 55%) PARA DFEVO 1/2,
+            FILTRO G4 (1 FIL. COARSE 65%) PARA DFEVO 1/2
+        </Caracteristicas>
+    </Detalles>' AS XML),
+    2
+FROM PROVEEDORES AS P
+CROSS JOIN TIPOS_SERVICIOS AS TS
+CROSS APPLY
+(
+    SELECT TOP (1)
+        E1.COD_Espacio
+    FROM ESPACIOS AS E1
+    INNER JOIN TIPOS_ESPACIOS AS TE
+        ON E1.COD_TipoEspacio = TE.COD_TipoEspacio
+    WHERE E1.COD_Propiedad = 1
+      AND TE.TipoEspacio = N'COCINA'
+    ORDER BY E1.COD_Espacio
+) AS E
+WHERE P.Empresa = N'Saltoki'
+  AND TS.TipoServicio = N'FILTROS';
+GO
+
+-- comprobar los registros insertados
+SELECT
+    S.COD_Servicio,
+    S.RefServicio,
+    P.Empresa,
+    TS.TipoServicio,
+    S.COD_Propiedad,
+    E.RefEspacio,
+    TE.TipoEspacio,
+    S.Especificaciones,
+    S.COD_Doc
+FROM SERVICIOS AS S
+INNER JOIN PROVEEDORES AS P
+    ON S.COD_Proveedor = P.COD_Proveedor
+INNER JOIN TIPOS_SERVICIOS AS TS
+    ON S.COD_TipoServicio = TS.COD_TipoServicio
+LEFT JOIN ESPACIOS AS E
+    ON S.COD_Espacio = E.COD_Espacio
+LEFT JOIN TIPOS_ESPACIOS AS TE
+    ON E.COD_TipoEspacio = TE.COD_TipoEspacio
+ORDER BY S.COD_Servicio;
+GO
+
+
+select * from SERVICIOS */
+
 
 -- -------------------------------------------------------------------
 --      2.17. SISTEMAS
 -- -------------------------------------------------------------------
 
+/* CREATE TABLE SISTEMAS
+(
+    COD_Sistema INT IDENTITY(1,1)
+        CONSTRAINT PK_SISTEMAS PRIMARY KEY,
 
+    COD_Propiedad INT NOT NULL,
+    COD_Espacio INT NULL,
+    COD_Proveedor INT NOT NULL,
+    COD_TipoSistema INT NOT NULL,
+
+    RefSistema NVARCHAR(50) NULL,
+    DatosTecnicos XML NULL,
+    FechaInstalacion DATETIME2 NOT NULL,
+    COD_Doc INT NULL,
+
+    CONSTRAINT FK_SISTEMAS_PROPIEDADES
+        FOREIGN KEY (COD_Propiedad)
+        REFERENCES PROPIEDADES (COD_Propiedad),
+
+    CONSTRAINT FK_SISTEMAS_ESPACIOS
+        FOREIGN KEY (COD_Espacio, COD_Propiedad)
+        REFERENCES ESPACIOS (COD_Espacio, COD_Propiedad),
+
+    CONSTRAINT FK_SISTEMAS_PROVEEDORES
+        FOREIGN KEY (COD_Proveedor)
+        REFERENCES PROVEEDORES (COD_Proveedor),
+
+    CONSTRAINT FK_SISTEMAS_TIPOS
+        FOREIGN KEY (COD_TipoSistema)
+        REFERENCES TIPOS_SISTEMAS (COD_TipoSistema),
+
+    CONSTRAINT FK_SISTEMAS_DOCUMENTOS
+        FOREIGN KEY (COD_Doc)
+        REFERENCES DOCUMENTOS (COD_Doc)
+);
+GO
+
+CREATE UNIQUE INDEX UX_SISTEMAS_RefSistema
+ON SISTEMAS (RefSistema)
+WHERE RefSistema IS NOT NULL;
+GO
+
+
+
+CREATE TRIGGER TRG_SISTEMAS_RefSistema
+ON SISTEMAS
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE S
+    SET RefSistema = CONCAT(
+        'PR', I.COD_Proveedor,
+        '-TS', I.COD_TipoSistema,
+        '-S', I.COD_Sistema
+    )
+    FROM SISTEMAS AS S
+    INNER JOIN INSERTED AS I
+        ON S.COD_Sistema = I.COD_Sistema;
+END;
+GO
+
+
+INSERT INTO SISTEMAS
+(
+    COD_Propiedad,
+    COD_Espacio,
+    COD_Proveedor,
+    COD_TipoSistema,
+    DatosTecnicos,
+    FechaInstalacion,
+    COD_Doc
+)
+SELECT
+    1,
+    NULL,
+    P.COD_Proveedor,
+    TS.COD_TipoSistema,
+    CAST(N'
+    <Sistema>
+        <Marca>SIBER</Marca>
+        <Modelo>DF EVO 2</Modelo>
+        <Tipo>Recuperador de calor</Tipo>
+        <Caracteristicas>
+            <CaudalMax>200 m3/h</CaudalMax>
+            <Domotica>Conectividad mediante KNX - Modbus</Domotica>
+            <ClaseFiltro>Coarse 65% (G4)</ClaseFiltro>
+        </Caracteristicas>
+    </Sistema>' AS XML),
+    '2025-11-01',
+    1
+FROM PROVEEDORES AS P
+CROSS JOIN TIPOS_SISTEMAS AS TS
+WHERE P.Empresa = N'Saltoki'
+  AND TS.TipoSistema = N'RECUPERADOR_CALOR';
+GO
+
+SELECT *
+FROM SISTEMAS;
+GO */
 
 
 /*Consulta para recuperar la marca:
@@ -1006,8 +1418,167 @@ GO*/
 --      2.18. PRESUPUESTOS
 -- -------------------------------------------------------------------
 
+/* CREATE TABLE PRESUPUESTOS
+(
+    COD_Presupuesto INT IDENTITY(1,1)
+        CONSTRAINT PK_PRESUPUESTOS PRIMARY KEY,
+
+    COD_Propiedad INT NOT NULL,
+    COD_Doc INT NOT NULL,
+    COD_Sistema INT NULL,
+    COD_Servicio INT NULL,
+    COD_EstadoPresu INT NOT NULL,
+
+    RefPresu NVARCHAR(50) NULL,
+
+    FechaInicio DATETIME2 NOT NULL,
+    FechaFin DATETIME2 NOT NULL,
+
+    Importe DECIMAL(14,2) NOT NULL,
+    Anticipo DECIMAL(14,2) NULL,
+    PagoParcial DECIMAL(14,2) NULL,
+
+    -- Importe total pagado
+    PagoTotal AS
+    (
+        ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0)
+    ) PERSISTED,
+
+    -- Importe pendiente de pago
+    Saldo AS
+    (
+        Importe - (ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0))
+    ) PERSISTED,
+
+    -- Indica si el presupuesto está completamente pagado
+    Pagado AS
+    (
+        CASE
+            WHEN Importe =
+                ISNULL(Anticipo, 0) +
+                ISNULL(PagoParcial, 0)
+            THEN 1
+            ELSE 0
+        END
+    ) PERSISTED,
+
+    URL_Compra NVARCHAR(4000) NULL,
+    Comentarios NVARCHAR(MAX) NULL,
+
+    RegistroInicial DATETIME2 NOT NULL
+        CONSTRAINT DF_PRESUPUESTOS_RegistroInicial
+        DEFAULT SYSDATETIME(),
+
+    RegistroFinal DATETIME2 NOT NULL
+        CONSTRAINT DF_PRESUPUESTOS_RegistroFinal
+        DEFAULT SYSDATETIME(),
+
+    -- Claves foráneas
+    CONSTRAINT FK_PRESUPUESTOS_PROPIEDADES
+        FOREIGN KEY (COD_Propiedad)
+        REFERENCES PROPIEDADES (COD_Propiedad),
+
+    CONSTRAINT FK_PRESUPUESTOS_DOCUMENTOS
+        FOREIGN KEY (COD_Doc)
+        REFERENCES DOCUMENTOS (COD_Doc),
+
+    CONSTRAINT FK_PRESUPUESTOS_SISTEMAS
+        FOREIGN KEY (COD_Sistema)
+        REFERENCES SISTEMAS (COD_Sistema),
+
+    CONSTRAINT FK_PRESUPUESTOS_SERVICIOS
+        FOREIGN KEY (COD_Servicio)
+        REFERENCES SERVICIOS (COD_Servicio),
+
+    CONSTRAINT FK_PRESUPUESTOS_ESTADOS
+        FOREIGN KEY (COD_EstadoPresu)
+        REFERENCES ESTADOS_PRESUPUESTOS (COD_EstadoPresu),
+
+    -- Restricciones CHECK
+    CONSTRAINT CK_PRESUPUESTOS_Fechas
+        CHECK (FechaFin >= FechaInicio),
+
+    CONSTRAINT CK_PRESUPUESTOS_Importe
+        CHECK (Importe >= 0),
+
+    CONSTRAINT CK_PRESUPUESTOS_Anticipo
+        CHECK (Anticipo IS NULL OR Anticipo >= 0),
+
+    CONSTRAINT CK_PRESUPUESTOS_PagoParcial
+        CHECK (PagoParcial IS NULL OR PagoParcial >= 0),
+
+    CONSTRAINT CK_PRESUPUESTOS_Pagos
+        CHECK
+        (
+            ISNULL(Anticipo, 0) +
+            ISNULL(PagoParcial, 0) <= Importe
+        )
+);
+GO
+
+CREATE UNIQUE INDEX UX_PRESUPUESTOS_RefPresu
+ON PRESUPUESTOS (RefPresu)
+WHERE RefPresu IS NOT NULL;
+GO
 
 
+CREATE TRIGGER TRG_PRESUPUESTOS_RefPresu
+ON PRESUPUESTOS
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE P
+    SET RefPresu = CONCAT(
+        PR.RefPropiedad,
+        '-PR',
+        I.COD_Presupuesto
+    )
+    FROM PRESUPUESTOS AS P
+    INNER JOIN INSERTED AS I
+        ON P.COD_Presupuesto = I.COD_Presupuesto
+    INNER JOIN PROPIEDADES AS PR
+        ON I.COD_Propiedad = PR.COD_Propiedad;
+END;
+GO
+
+
+INSERT INTO PRESUPUESTOS
+(
+    COD_Propiedad,
+    COD_Doc,
+    COD_Sistema,
+    COD_Servicio,
+    COD_EstadoPresu,
+    FechaInicio,
+    FechaFin,
+    Importe,
+    Anticipo,
+    PagoParcial,
+    URL_Compra,
+    Comentarios
+)
+SELECT
+    1,
+    2,
+    1,
+    2,
+    EP.COD_EstadoPresu,
+    '2026-11-01',
+    '2026-11-15',
+    61.96,
+    0,
+    61.96,
+    NULL,
+    N'solo entrega en tienda'
+FROM ESTADOS_PRESUPUESTOS AS EP
+WHERE EP.EstadoPresu = N'ACEPTADO';
+GO */
+
+
+
+select * from PRESUPUESTOS
 
 
 
@@ -1016,10 +1587,175 @@ GO*/
 -- -------------------------------------------------------------------
 
 
+/* -- clave foraneas compuestas para la tabla PLANIFICACION
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.key_constraints
+    WHERE name = 'UQ_SISTEMAS_COD_Sistema_Propiedad'
+)
+BEGIN
+    ALTER TABLE SISTEMAS
+    ADD CONSTRAINT UQ_SISTEMAS_COD_Sistema_Propiedad
+    UNIQUE (COD_Sistema, COD_Propiedad);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.key_constraints
+    WHERE name = 'UQ_SERVICIOS_COD_Servicio_Propiedad'
+)
+BEGIN
+    ALTER TABLE SERVICIOS
+    ADD CONSTRAINT UQ_SERVICIOS_COD_Servicio_Propiedad
+    UNIQUE (COD_Servicio, COD_Propiedad);
+END;
+GO
+
+
+CREATE TABLE PLANIFICACION
+(
+    COD_Actividad INT IDENTITY(1,1)
+        CONSTRAINT PK_PLANIFICACION PRIMARY KEY,
+
+    COD_Propiedad INT NOT NULL,
+    COD_TipoActividad INT NOT NULL,
+    COD_Sistema INT NULL,
+    COD_Servicio INT NULL,
+
+    RefActividad NVARCHAR(50) NULL,
+
+    COD_EstadoPlan INT NOT NULL,
+
+    FechaInicio DATETIME2 NULL,
+    FechaFin DATETIME2 NULL,
+
+    Comentarios NVARCHAR(MAX) NULL,
+    FechaRecordatorio DATETIME2 NULL,
+    COD_Doc INT NULL,
+
+    RegistroInicial DATETIME2 NOT NULL
+        CONSTRAINT DF_PLANIFICACION_RegistroInicial
+        DEFAULT SYSDATETIME(),
+
+    RegistroFinal DATETIME2 NOT NULL
+        CONSTRAINT DF_PLANIFICACION_RegistroFinal
+        DEFAULT SYSDATETIME(),
+
+    -- Claves foráneas
+    CONSTRAINT FK_PLANIFICACION_PROPIEDADES
+        FOREIGN KEY (COD_Propiedad)
+        REFERENCES PROPIEDADES (COD_Propiedad),
+
+    CONSTRAINT FK_PLANIFICACION_TIPOS
+        FOREIGN KEY (COD_TipoActividad)
+        REFERENCES TIPOS_ACTIVIDADES (COD_TipoActividad),
+
+    CONSTRAINT FK_PLANIFICACION_SISTEMAS
+        FOREIGN KEY (COD_Sistema, COD_Propiedad)
+        REFERENCES SISTEMAS (COD_Sistema, COD_Propiedad),
+
+    CONSTRAINT FK_PLANIFICACION_SERVICIOS
+        FOREIGN KEY (COD_Servicio, COD_Propiedad)
+        REFERENCES SERVICIOS (COD_Servicio, COD_Propiedad),
+
+    CONSTRAINT FK_PLANIFICACION_ESTADOS
+        FOREIGN KEY (COD_EstadoPlan)
+        REFERENCES ESTADOS_PLANIFICACION (COD_EstadoPlan),
+
+    CONSTRAINT FK_PLANIFICACION_DOCUMENTOS
+        FOREIGN KEY (COD_Doc)
+        REFERENCES DOCUMENTOS (COD_Doc),
+
+    -- Restricción de fechas
+    CONSTRAINT CK_PLANIFICACION_Fechas
+        CHECK (
+            FechaInicio IS NULL
+            OR FechaFin IS NULL
+            OR FechaFin >= FechaInicio
+        )
+);
+GO
+
+
+
+CREATE UNIQUE INDEX UX_PLANIFICACION_RefActividad
+ON PLANIFICACION (RefActividad)
+WHERE RefActividad IS NOT NULL;
+GO
 
 
 
 
+CREATE TRIGGER TRG_PLANIFICACION_RefActividad
+ON PLANIFICACION
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE P
+    SET RefActividad = CONCAT(
+        PR.RefPropiedad,
+
+        CASE
+            WHEN I.COD_Sistema IS NOT NULL
+            THEN CONCAT('-S', I.COD_Sistema)
+            ELSE ''
+        END,
+
+        CASE
+            WHEN I.COD_Servicio IS NOT NULL
+            THEN CONCAT('-SV', I.COD_Servicio)
+            ELSE ''
+        END,
+
+        '-',
+        TA.TipoActividad,
+        '-A',
+        I.COD_Actividad
+    )
+    FROM PLANIFICACION AS P
+    INNER JOIN INSERTED AS I
+        ON P.COD_Actividad = I.COD_Actividad
+    INNER JOIN PROPIEDADES AS PR
+        ON I.COD_Propiedad = PR.COD_Propiedad
+    INNER JOIN TIPOS_ACTIVIDADES AS TA
+        ON I.COD_TipoActividad = TA.COD_TipoActividad;
+END;
+GO */
+
+/* 
+INSERT INTO PLANIFICACION
+(
+    COD_Propiedad,
+    COD_TipoActividad,
+    COD_Sistema,
+    COD_Servicio,
+    COD_EstadoPlan,
+    FechaInicio,
+    FechaFin,
+    Comentarios,
+    FechaRecordatorio,
+    COD_Doc
+)
+SELECT
+    1,
+    31,
+    1,
+    2,
+    EP.COD_EstadoPlan,
+    '2026-12-01',
+    '2026-12-01',
+    N'OFERTA REPUESTOS SIBER',
+    '2026-10-01',
+    NULL
+FROM ESTADOS_PLANIFICACION AS EP
+WHERE EP.EstadoPlan = N'PROGRAMADO';
+GO
+
+select * from PLANIFICACION
+ */
 
 -- ===================================================================
 --      3. PROCEDIMIENTOS ALMACENADOS
