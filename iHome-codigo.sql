@@ -473,7 +473,7 @@ CREATE TABLE Tipos_Servicios
     TipoServicio NVARCHAR(100) NOT NULL
         CONSTRAINT UQ_Tipos_Servicios_TipoServicio UNIQUE,
     Activo BIT NOT NULL
-        CONSTRAINT DF_Tipos_Servicios_Activo DEFAULT 1,
+        CONSTRAINT DF_Tipos_Servicios_Activo DEFAULT 1
 );
 GO
 
@@ -586,7 +586,7 @@ CREATE TABLE Tipos_Sistemas
     TipoSistema NVARCHAR(100) NOT NULL
         CONSTRAINT UQ_Tipos_Sistemas_TipoSistema UNIQUE,
     Activo BIT NOT NULL
-        CONSTRAINT DF_Tipos_Sistemas_Activo DEFAULT 1,
+        CONSTRAINT DF_Tipos_Sistemas_Activo DEFAULT 1
 );
 GO
 
@@ -2900,7 +2900,7 @@ GO
 /*Servicios registrados por propiedad, espacio, proveedor y
 tipo de servicio.*/
 
-CREATE OR ALTER VIEW dbo.VW_HistoricoServicios
+CREATE OR ALTER VIEW dbo.VW_ServiciosRegistrados
 AS
 SELECT
     S.COD_Servicio,
@@ -2976,8 +2976,25 @@ GO
 /*Número de actividades pendientes, programadas, en curso y
 finalizadas.*/
 
-
-
+SELECT
+    EP.EstadoPlan,
+    COUNT(P.COD_Actividad) AS TotalActividades
+FROM Estados_Planificacion AS EP
+LEFT JOIN Planificacion AS P
+    ON EP.COD_EstadoPlan = P.COD_EstadoPlan
+WHERE EP.EstadoPlan IN
+(
+    N'PENDIENTE',
+    N'PROGRAMADO',
+    N'EN CURSO',
+    N'FINALIZADO'
+)
+GROUP BY
+    EP.COD_EstadoPlan,
+    EP.EstadoPlan
+ORDER BY
+    EP.COD_EstadoPlan;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -2986,11 +3003,29 @@ finalizadas.*/
 /*Número y clasificación de instalaciones existentes en cada
 propiedad.*/
 
-
-
-
-
-
+SELECT
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    CS.CatSistema,
+    TS.TipoSistema,
+    COUNT(S.COD_Sistema) AS TotalSistemas
+FROM Propiedades AS P
+LEFT JOIN Sistemas AS S
+    ON P.COD_Propiedad = S.COD_Propiedad
+LEFT JOIN Tipos_Sistemas AS TS
+    ON S.COD_TipoSistema = TS.COD_TipoSistema
+LEFT JOIN Categorias_Sistemas AS CS
+    ON TS.COD_CatSistema = CS.COD_CatSistema
+GROUP BY
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    CS.CatSistema,
+    TS.TipoSistema
+ORDER BY
+    P.COD_Propiedad,
+    CS.CatSistema,
+    TS.TipoSistema;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -2998,9 +3033,20 @@ propiedad.*/
 -- -------------------------------------------------------------------
 /*Contabilizar los servicios asociados a cada proveedor.*/
 
-
-
-
+SELECT
+    PR.COD_Proveedor,
+    PR.Empresa,
+    COUNT(S.COD_Servicio) AS TotalServicios
+FROM Proveedores AS PR
+LEFT JOIN Servicios AS S
+    ON PR.COD_Proveedor = S.COD_Proveedor
+GROUP BY
+    PR.COD_Proveedor,
+    PR.Empresa
+ORDER BY
+    TotalServicios DESC,
+    PR.Empresa;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -3008,11 +3054,21 @@ propiedad.*/
 -- -------------------------------------------------------------------
 /*Calcular el importe total presupuestado por propiedad (SUM).*/
 
-
-
-
-
-
+SELECT
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    COUNT(PR.COD_Presupuesto) AS TotalPresupuestos,
+    SUM(COALESCE(PR.Importe, 0)) AS ImporteTotal,
+    AVG(PR.Importe) AS ImporteMedio
+FROM Propiedades AS P
+LEFT JOIN Presupuestos AS PR
+    ON P.COD_Propiedad = PR.COD_Propiedad
+GROUP BY
+    P.COD_Propiedad,
+    P.RefPropiedad
+ORDER BY
+    ImporteTotal DESC;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -3021,7 +3077,41 @@ propiedad.*/
 /*Distribución de trabajos de mantenimiento, instalaciones,
 reparaciones, inspecciones, etc.*/
 
+SELECT
+    TA.COD_TipoActividad,
+    TA.TipoActividad,
+    COUNT(P.COD_Actividad) AS TotalActividades
+FROM Tipos_Actividades AS TA
+LEFT JOIN Planificacion AS P
+    ON TA.COD_TipoActividad = P.COD_TipoActividad
+GROUP BY
+    TA.COD_TipoActividad,
+    TA.TipoActividad
+ORDER BY
+    TotalActividades DESC,
+    TA.TipoActividad;
+GO
 
+-- -------------------------------------------------------------------
+--      7.6. PROVEEDORES CON MÁS SERVICIOS
+-- -------------------------------------------------------------------
+/*Listado de proveedores que han prestado más de un servicio, ordenados
+por el número de servicios prestados.*/
+
+SELECT
+    PR.Empresa,
+    COUNT(S.COD_Servicio) AS TotalServicios
+FROM Proveedores AS PR
+INNER JOIN Servicios AS S
+    ON PR.COD_Proveedor = S.COD_Proveedor
+GROUP BY
+    PR.COD_Proveedor,
+    PR.Empresa
+HAVING
+    COUNT(S.COD_Servicio) > 1
+ORDER BY
+    TotalServicios DESC;
+GO
 
 
 -- ===================================================================
@@ -3030,50 +3120,231 @@ reparaciones, inspecciones, etc.*/
 -- -------------------------------------------------------------------
 --      8.1. SERVICIOS - ESPECIFICACIONES
 -- -------------------------------------------------------------------
-/*Consultar horarios, características y condiciones de los servicios.*/
+/*Consultar características de los servicios.*/
+
+SELECT
+    S.COD_Servicio,
+    S.RefServicio,
+    P.Empresa AS Proveedor,
+    TS.TipoServicio,
+    S.Especificaciones.value(
+        '(/Detalles/Caracteristicas/text())[1]',
+        'NVARCHAR(1000)'
+    ) AS Caracteristicas
+FROM Servicios AS S
+INNER JOIN Proveedores AS P
+    ON S.COD_Proveedor = P.COD_Proveedor
+INNER JOIN Tipos_Servicios AS TS
+    ON S.COD_TipoServicio = TS.COD_TipoServicio
+WHERE S.Especificaciones.exist('/Detalles/Caracteristicas') = 1;
+GO
 
 
-
+-- especificaciones completas
+SELECT
+    COD_Servicio,
+    RefServicio,
+    Especificaciones.query('/Detalles') AS DetallesServicio
+FROM Servicios
+WHERE Especificaciones IS NOT NULL;
+GO
 
 
 -- -------------------------------------------------------------------
 --      8.2. SISTEMAS - DATOS TÉCNICOS
 -- -------------------------------------------------------------------
-/*Consultar marcas, modelos y características técnicas de los
-sistemas instalados.*/
+/*Consultar sistemas que tengan información de domótica.*/
+
+SELECT
+    S.COD_Sistema,
+    S.RefSistema,
+    TS.TipoSistema,
+    S.DatosTecnicos.value(
+        '(/Sistema/Caracteristicas/Domotica/text())[1]',
+        'NVARCHAR(200)'
+    ) AS InformacionDomotica
+FROM Sistemas AS S
+INNER JOIN Tipos_Sistemas AS TS
+    ON S.COD_TipoSistema = TS.COD_TipoSistema
+WHERE S.DatosTecnicos.exist(
+    '/Sistema/Caracteristicas/Domotica'
+) = 1;
+GO
 
 
-
-
-
+-- datos técnicos completos
+SELECT
+    COD_Sistema,
+    RefSistema,
+    DatosTecnicos.query('/Sistema') AS InformacionTecnica
+FROM Sistemas
+WHERE DatosTecnicos IS NOT NULL;
+GO
 
 
 -- ===================================================================
 --      9. USUARIOS Y ROLES
 -- ===================================================================
 -- -------------------------------------------------------------------
---      8.1. ADMINISTRADOR
+--      9.1. ADMINISTRADOR
 -- -------------------------------------------------------------------
 /*Control completo de la base de datos.*/
 
+CREATE ROLE Rol_Administrador;
+GO
 
+CREATE USER Usuario_Administrador WITHOUT LOGIN;
+GO
+
+ALTER ROLE Rol_Administrador
+ADD MEMBER Usuario_Administrador;
+GO
+
+ALTER ROLE db_owner
+ADD MEMBER Usuario_Administrador;
+GO
+
+-- Prueba de permisos:
+EXECUTE AS USER = 'Usuario_Administrador';
+-- Debe funcionar
+SELECT * FROM dbo.Clientes;
+SELECT * FROM dbo.Presupuestos;
+SELECT * FROM dbo.Sistemas;
+REVERT;
+GO
 
 
 
 -- -------------------------------------------------------------------
---      8.2. GESTOR
+--      9.2. GESTOR
 -- -------------------------------------------------------------------
 /*Consultar y gestionar clientes, propiedades, proveedores, servicios
-y presupuestos.*/
+y presupuestos con permisos de consulta, inserción, modificación
+y eliminación.*/
 
+CREATE ROLE Rol_Gestor;
+GO
 
+CREATE USER Usuario_Gestor WITHOUT LOGIN;
+GO
 
+ALTER ROLE Rol_Gestor
+ADD MEMBER Usuario_Gestor;
+GO
 
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Clientes
+TO Rol_Gestor;
+GO
 
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Propiedades
+TO Rol_Gestor;
+GO
 
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Proveedores
+TO Rol_Gestor;
+GO
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Servicios
+TO Rol_Gestor;
+GO
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Presupuestos
+TO Rol_Gestor;
+GO
+
+-- denegar el acceso directo a los sistemas y a la planificación
+DENY SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Sistemas
+TO Rol_Gestor;
+GO
+
+DENY SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Planificacion
+TO Rol_Gestor;
+GO
+
+-- Prueba de permisos:
+EXECUTE AS USER = 'Usuario_Gestor';
+-- Debe funcionar
+SELECT * FROM dbo.Clientes;
+-- Debe funcionar
+SELECT * FROM dbo.Propiedades;
+-- Debe funcionar
+SELECT * FROM dbo.Presupuestos;
+-- Debe producir un error de permisos
+SELECT * FROM dbo.Sistemas;
+REVERT;
+GO
 
 -- -------------------------------------------------------------------
---      8.3. TÉCNICO
+--      9.3. TÉCNICO
 -- -------------------------------------------------------------------
 /*Consultar propiedades, sistemas y servicios, y gestionar
 actividades de planificación.*/
+
+CREATE ROLE Rol_Tecnico;
+GO
+
+CREATE USER Usuario_Tecnico WITHOUT LOGIN;
+GO
+
+ALTER ROLE Rol_Tecnico
+ADD MEMBER Usuario_Tecnico;
+GO
+
+GRANT SELECT
+ON OBJECT::dbo.Propiedades
+TO Rol_Tecnico;
+GO
+
+GRANT SELECT
+ON OBJECT::dbo.Sistemas
+TO Rol_Tecnico;
+GO
+
+GRANT SELECT
+ON OBJECT::dbo.Servicios
+TO Rol_Tecnico;
+GO
+
+-- realizar consultas, inserciones, modificaciones y eliminaciones
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Planificacion
+TO Rol_Tecnico;
+GO
+
+-- denegar el acceso directo a clientes, proveedores y presupuestos
+DENY SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Clientes
+TO Rol_Tecnico;
+GO
+
+DENY SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Proveedores
+TO Rol_Tecnico;
+GO
+
+DENY SELECT, INSERT, UPDATE, DELETE
+ON OBJECT::dbo.Presupuestos
+TO Rol_Tecnico;
+GO
+
+-- Prueba de permisos:
+EXECUTE AS USER = 'Usuario_Tecnico';
+-- Debe funcionar
+SELECT * FROM dbo.Propiedades;
+-- Debe funcionar
+SELECT * FROM dbo.Sistemas;
+-- Debe funcionar
+SELECT * FROM dbo.Planificacion;
+-- Debe producir un error de permisos
+SELECT * FROM dbo.Presupuestos;
+REVERT;
+GO
+
+
