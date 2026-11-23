@@ -54,9 +54,7 @@ CREATE TABLE Clientes
 WITH
 (
 	SYSTEM_VERSIONING = ON
-	(
-		HISTORY_TABLE = dbo.Clientes_Historico
-	)
+	(HISTORY_TABLE = dbo.Clientes_Historico)
 );
 GO
 
@@ -68,8 +66,7 @@ GO
 
 
 INSERT INTO CLIENTES
-(
-    ContactoNombre,
+    (ContactoNombre,
     ContactoApellido1,
     ContactoApellido2,
     ContactoTel,
@@ -80,51 +77,14 @@ INSERT INTO CLIENTES
     Ciudad,
     Provincia,
     RGPD_Autoriza,
-    RGPD_Fecha
-)
+    RGPD_Fecha)
 VALUES
-(
-    'Vera',
-    'Castro',
-    'Gutiérrez',
-    '672958367',
-    'veracastro@gmail.com',
-    '61234678Y',
-    'Calle Madrid',
-    '28041',
-    'Madrid',
-    'Madrid',
-    1,
-    '2023-09-02'
-),
-(
-    'Javier',
-    'Sánchez',
-    'Rivera',
-    '689463778',
-    'javiersanchez@gmail.com',
-    '87632816T',
-    'Calle Lisboa',
-    '28014',
-    'Leganés',
-    'Madrid',
-    1,
-    '2022-04-17'
-),
-(
-    'Francisco',
-    'Vaquero',
-    'Castro',
-    '645277890',
-    'franciscovaquero@gmail.com',
-    '47284617D',
-    'Avenida Fuenlabrada',
-    '28911',
-    'Málaga',
-    'Málaga',
-    0,
-    NULL
-);
+    ('Vera', 'Castro', 'Gutiérrez', '672958367', 'veracastro@gmail.com', '61234678Y',
+    'Calle Madrid', '28041', 'Madrid', 'Madrid', 1, '2023-09-02'),
+    ('Javier', 'Sánchez', 'Rivera', '689463778', 'javiersanchez@gmail.com', '87632816T',
+    'Calle Lisboa', '28014', 'Leganés', 'Madrid', 1, '2022-04-17'),
+    ('Francisco', 'Vaquero', 'Castro', '645277890', 'franciscovaquero@gmail.com', '47284617D',
+    'Avenida Fuenlabrada', '28911', 'Málaga', 'Málaga', 0, NULL);
 GO
 
 SELECT * FROM Clientes;
@@ -166,9 +126,7 @@ CREATE TABLE Proveedores
 WITH
 (
 	SYSTEM_VERSIONING = ON
-	(
-		HISTORY_TABLE = dbo.Proveedores_Historico
-	)
+	(HISTORY_TABLE = dbo.Proveedores_Historico)
 );
 GO
 
@@ -197,118 +155,27 @@ INSERT INTO PROVEEDORES
     RGPD_Fecha
 )
 VALUES
-(
-    'Los Gemelos',
-    'Juan José',
-    'Escribano',
-    'Cabello',
-    '677528478',
-    NULL,
-    '1816363F',
-    'Lago Maracaibo 13 D',
-    '28018',
-    'Madrid',
-    'Madrid',
-    'Saco 1m3 - www.sacoslosgemelos.com',
-    0,
-    NULL
-),
-(
-    'Saltoki',
-    'Daniel',
-    'García',
-    'Velasco',
-    '606582493',
-    'dgarciav@saltoki.es',
-    'A82825456',
-    'Calle Río Bembezar 4',
-    '28906',
-    'Getafe',
-    'Madrid',
-    'www.saltoki.es',
-    1,
-    '2025-07-27'
-),
-(
-    'Dormitorum',
-    NULL,
-    NULL,
-    NULL,
-    '600999897',
-    NULL,
-    NULL,
-    'Av Rey Juan Carlos I 69',
-    '28916',
-    'Leganés',
-    'Madrid',
-    'www.dormitorum.es',
-    1,
-    '2025-10-06'
-),
-(
-    'Bosch España',
-    NULL,
-    NULL,
-    NULL,
-    '976305713',
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    'www.bosch-home.es',
-    0,
-    NULL
-),
-(
-    'IKEA',
-    NULL,
-    NULL,
-    NULL,
-    '900400922',
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    'Leganés',
-    'Madrid',
-    NULL,
-    0,
-    NULL
-),
-(
-    'PVC3',
-    'Verónica',
-    'García',
-    'Díaz',
-    '925513637',
-    'pvc3@pvc3.com',
-    NULL,
-    'Calle Nuevo Toledo 19',
-    '45200',
-    'Illescas',
-    'Toledo',
-    NULL,
-    1,
-    '2025-07-15'
-),
-(
-    'JCMLsoluciones.es',
-    'Fransuani',
-    'Álvarez',
-    NULL,
-    '602654868',
-    NULL,
-    'B19963594',
-    'Calle de las Dehesillas 2 Local 1',
-    '28981',
-    'Parla',
-    'Madrid',
-    'Contratista',
-    1,
-    '2025-06-20'
-);
+    ('Los Gemelos', 'Juan José', 'Escribano', 'Cabello', '677528478', NULL,
+    '1816363F', 'Lago Maracaibo 13 D', '28018', 'Madrid', 'Madrid',
+    'Saco 1m3 - www.sacoslosgemelos.com', 0, NULL),
+    ('Saltoki', 'Daniel', 'García', 'Velasco', '606582493', 'dgarciav@saltoki.es',
+    'A82825456', 'Calle Río Bembezar 4', '28906', 'Getafe', 'Madrid',
+    'www.saltoki.es', 1, '2025-07-27'),
+    ('Dormitorum', NULL, NULL, NULL, '600999897', NULL,
+    NULL, 'Av Rey Juan Carlos I 69', '28916', 'Leganés', 'Madrid',
+    'www.dormitorum.es', 1, '2025-10-06'),
+    ('Bosch España', NULL, NULL, NULL, '976305713', NULL,
+    NULL, NULL, NULL, NULL, NULL,
+    'www.bosch-home.es', 0, NULL),
+    ('IKEA', NULL, NULL, NULL, '900400922', NULL,
+    NULL, NULL, NULL, 'Leganés', 'Madrid',
+    NULL, 0, NULL),
+    ('PVC3', 'Verónica', 'García','Díaz', '925513637', 'pvc3@pvc3.com',
+    NULL, 'Calle Nuevo Toledo 19', '45200', 'Illescas', 'Toledo',
+    NULL, 1, '2025-07-15'),
+    ('JCMLsoluciones.es', 'Fransuani', 'Álvarez', NULL, '602654868', NULL,
+    'B19963594', 'Calle de las Dehesillas 2 Local 1', '28981', 'Parla', 'Madrid',
+    'Contratista', 1, '2025-06-20');
 GO
 
 SELECT * FROM Proveedores;
@@ -332,10 +199,7 @@ CREATE TABLE Estados_Planificacion
 GO
 
 INSERT INTO Estados_Planificacion
-(
-    EstadoPlan,
-    Orden
-)
+(EstadoPlan, Orden)
 VALUES
     ('PENDIENTE', 1),
     ('PROGRAMADO', 2),
@@ -370,10 +234,7 @@ CREATE TABLE Estados_Presupuestos
 GO
 
 INSERT INTO Estados_Presupuestos
-(
-    EstadoPresu,
-    Orden
-)
+(EstadoPresu,Orden)
 VALUES
     ('RECIBIDO', 1),
     ('ENTREGADO', 2),
@@ -406,9 +267,7 @@ CREATE TABLE Categorias_Servicios
 GO
 
 INSERT INTO Categorias_Servicios
-(
-    CatServicio
-)
+(CatServicio)
 VALUES
     ('ACABADOS'), ('CARPINTERIA'), ('CONSERVACION'), ('CONSTRUCCION'),
     ('GESTION'), ('INSTALACION'), ('LIMPIEZA'), ('LOGISTICA'),
@@ -439,9 +298,7 @@ CREATE TABLE Categorias_Sistemas
 GO
 
 INSERT INTO Categorias_Sistemas
-(
-    CatSistema
-)
+(CatSistema)
 VALUES
     ('CLIMATIZACION_VENTILACION'),
     ('CONSTRUCTIVOS'),
@@ -475,9 +332,7 @@ CREATE TABLE Tipos_Actividades
 GO
 
 INSERT INTO Tipos_Actividades
-(
-    TipoActividad
-)
+(TipoActividad)
 VALUES
     ('ALMACENAR'), ('ANALIZAR'), ('COBRAR'), ('COMPRAR'), ('COMPROBAR'),
     ('CONTACTAR'), ('COORDINAR'), ('CITAR'), ('COTIZAR'), ('DISEÑAR'),
@@ -513,9 +368,7 @@ CREATE TABLE Tipos_Documentos
 GO
 
 INSERT INTO Tipos_Documentos
-(
-    TipoDoc
-)
+(TipoDoc)
 VALUES
     ('ACTA'), ('ALBARAN'), ('AUTORIZACION'), ('BOLETIN'), ('CATALOGO'),
     ('CARPETA'), ('CERTIFICADO'), ('CONTRATO'), ('DECLARACION_RESPONSABLE'),
@@ -549,10 +402,7 @@ CREATE TABLE Tipos_Espacios
 GO
 
 INSERT INTO Tipos_Espacios
-(
-    TipoEspacio,
-    Activo
-)
+(TipoEspacio,Activo)
 VALUES
     ('ACCESO', 1), ('ALMACEN', 1), ('AZOTEA', 1), ('BAÑO', 1),
     ('COCINA', 1), ('COMEDOR', 1), ('CUARTO_CALDERAS', 1),
@@ -588,11 +438,7 @@ CREATE TABLE Tipos_Propiedades
 GO
 
 INSERT INTO Tipos_Propiedades
-(
-    TipoPropiedad,
-    PrefijoPropiedad,
-    Activo
-)
+(TipoPropiedad, PrefijoPropiedad, Activo)
 VALUES
     ('APARTAMENTO', 'APT', 1),
     ('CASA', 'CSA', 1),
@@ -633,11 +479,7 @@ GO
 
 -- SEGURIDAD será el único tipo de servicio desactivado
 INSERT INTO Tipos_Servicios
-(
-    COD_CatServicio,
-    TipoServicio,
-    Activo
-)
+(COD_CatServicio, TipoServicio, Activo)
 SELECT
     C.COD_CatServicio,
     V.TipoServicio,
@@ -752,11 +594,7 @@ GO
 
 -- ALARMA será el único tipo de sistema desactivado
 INSERT INTO TIPOS_SISTEMAS
-(
-    COD_CatSistema,
-    TipoSistema,
-    Activo
-)
+(COD_CatSistema, TipoSistema, Activo)
 SELECT
     C.COD_CatSistema,
     V.TipoSistema,
@@ -1098,57 +936,47 @@ GO
 -- -------------------------------------------------------------------
 
 
--- restricción de la tabla Espacios para que la clave foránea compuesta de la tabla SERVICIOS funcione correctamente
-/* ALTER TABLE ESPACIOS
-ADD CONSTRAINT UQ_ESPACIOS_COD_Espacio_Propiedad
+-- restricción de la tabla Espacios para que la clave foránea compuesta de la tabla Servicios funcione correctamente
+ALTER TABLE Espacios
+ADD CONSTRAINT UQ_Espacios_COD_Espacio_Propiedad
 UNIQUE (COD_Espacio, COD_Propiedad);
 GO
 
-CREATE TABLE SERVICIOS
+
+CREATE TABLE Servicios
 (
     COD_Servicio INT IDENTITY(1,1)
-        CONSTRAINT PK_SERVICIOS PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
-    COD_Espacio INT NULL,
-    COD_Proveedor INT NOT NULL,
-    COD_TipoServicio INT NOT NULL,
-
+        CONSTRAINT PK_Servicios PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT FK_Servicios_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
+    COD_Espacio INT NULL
+        CONSTRAINT FK_Servicios_Espacios
+        FOREIGN KEY (COD_Espacio, COD_Propiedad)
+        REFERENCES Espacios (COD_Espacio, COD_Propiedad),
+    COD_Proveedor INT NOT NULL
+        CONSTRAINT FK_Servicios_Proveedores FOREIGN KEY
+        REFERENCES Proveedores,
+    COD_TipoServicio INT NOT NULL
+        CONSTRAINT FK_Servicios_Tipos FOREIGN KEY
+        REFERENCES Tipos_Servicios,
     RefServicio NVARCHAR(30) NULL,
     Especificaciones XML NULL,
-    COD_Doc INT NULL,
-
-    CONSTRAINT FK_SERVICIOS_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_SERVICIOS_ESPACIOS
-        FOREIGN KEY (COD_Espacio, COD_Propiedad)
-        REFERENCES ESPACIOS (COD_Espacio, COD_Propiedad),
-
-    CONSTRAINT FK_SERVICIOS_PROVEEDORES
-        FOREIGN KEY (COD_Proveedor)
-        REFERENCES PROVEEDORES (COD_Proveedor),
-
-    CONSTRAINT FK_SERVICIOS_TIPOS
-        FOREIGN KEY (COD_TipoServicio)
-        REFERENCES TIPOS_SERVICIOS (COD_TipoServicio),
-
-    CONSTRAINT FK_SERVICIOS_DOCUMENTOS
-        FOREIGN KEY (COD_Doc)
-        REFERENCES DOCUMENTOS (COD_Doc)
+    COD_Doc INT NULL
+        CONSTRAINT FK_Servicios_Documentos FOREIGN KEY
+        REFERENCES Documentos
 );
 GO
 
 -- Referencia única cuando contiene un valor
-CREATE UNIQUE INDEX UX_SERVICIOS_RefServicio
-ON SERVICIOS (RefServicio)
+CREATE UNIQUE INDEX UX_Servicios_RefServicio
+ON Servicios (RefServicio)
 WHERE RefServicio IS NOT NULL;
 GO
 
 -- trigger admite inserciones múltiples y genera una referencia para cada servicio
-CREATE TRIGGER TRG_SERVICIOS_RefServicio
-ON SERVICIOS
+CREATE TRIGGER TRG_Servicios_RefServicio
+ON Servicios
 AFTER INSERT
 AS
 BEGIN
@@ -1160,23 +988,23 @@ BEGIN
         '-TS', I.COD_TipoServicio,
         '-S', I.COD_Servicio
     )
-    FROM SERVICIOS AS S
+    FROM Servicios AS S
     INNER JOIN INSERTED AS I
         ON S.COD_Servicio = I.COD_Servicio;
 END;
 GO
 
-/* drop table SERVICIOS
+/* drop table Servicios
 
-DROP TRIGGER IF EXISTS TRG_SERVICIOS_RefServicio;
+DROP TRIGGER IF EXISTS TRG_Servicios_RefServicio;
 GO
 
 SELECT *
 FROM sys.triggers
-WHERE name = 'TRG_SERVICIOS_RefServicio';
+WHERE name = 'TRG_Servicios_RefServicio';
 GO */
 
-INSERT INTO SERVICIOS
+INSERT INTO Servicios
 (
     COD_Propiedad,
     COD_Espacio,
@@ -1196,21 +1024,19 @@ SELECT
         <Caracteristicas>Saco 1m3 37 euros IVA incluido</Caracteristicas>
     </Detalles>' AS XML),
     NULL
-FROM PROVEEDORES AS P
-CROSS JOIN TIPOS_SERVICIOS AS TS
+FROM Proveedores AS P
+CROSS JOIN Tipos_Servicios AS TS
 WHERE P.Empresa = N'Los Gemelos'
   AND TS.TipoServicio = N'SUMINISTRO_MATERIALES';
 GO
 
-INSERT INTO SERVICIOS
-(
-    COD_Propiedad,
+INSERT INTO Servicios
+    (COD_Propiedad,
     COD_Espacio,
     COD_Proveedor,
     COD_TipoServicio,
     Especificaciones,
-    COD_Doc
-)
+    COD_Doc)
 SELECT
     1,
     E.COD_Espacio,
@@ -1224,14 +1050,14 @@ SELECT
         </Caracteristicas>
     </Detalles>' AS XML),
     2
-FROM PROVEEDORES AS P
-CROSS JOIN TIPOS_SERVICIOS AS TS
+FROM Proveedores AS P
+CROSS JOIN Tipos_Servicios AS TS
 CROSS APPLY
 (
     SELECT TOP (1)
         E1.COD_Espacio
-    FROM ESPACIOS AS E1
-    INNER JOIN TIPOS_ESPACIOS AS TE
+    FROM Espacios AS E1
+    INNER JOIN Tipos_Espacios AS TE
         ON E1.COD_TipoEspacio = TE.COD_TipoEspacio
     WHERE E1.COD_Propiedad = 1
       AND TE.TipoEspacio = N'COCINA'
@@ -1252,27 +1078,28 @@ SELECT
     TE.TipoEspacio,
     S.Especificaciones,
     S.COD_Doc
-FROM SERVICIOS AS S
-INNER JOIN PROVEEDORES AS P
+FROM Servicios AS S
+INNER JOIN Proveedores AS P
     ON S.COD_Proveedor = P.COD_Proveedor
-INNER JOIN TIPOS_SERVICIOS AS TS
+INNER JOIN Tipos_Servicios AS TS
     ON S.COD_TipoServicio = TS.COD_TipoServicio
-LEFT JOIN ESPACIOS AS E
+LEFT JOIN Espacios AS E
     ON S.COD_Espacio = E.COD_Espacio
-LEFT JOIN TIPOS_ESPACIOS AS TE
+LEFT JOIN Tipos_Espacios AS TE
     ON E.COD_TipoEspacio = TE.COD_TipoEspacio
 ORDER BY S.COD_Servicio;
 GO
 
 
-select * from SERVICIOS */
+SELECT * FROM Servicios;
+GO
 
 
 -- -------------------------------------------------------------------
 --      2.17. SISTEMAS
 -- -------------------------------------------------------------------
 
-/* CREATE TABLE SISTEMAS
+CREATE TABLE SISTEMAS
 (
     COD_Sistema INT IDENTITY(1,1)
         CONSTRAINT PK_SISTEMAS PRIMARY KEY,
@@ -1309,13 +1136,14 @@ select * from SERVICIOS */
 );
 GO
 
+
 CREATE UNIQUE INDEX UX_SISTEMAS_RefSistema
 ON SISTEMAS (RefSistema)
 WHERE RefSistema IS NOT NULL;
 GO
 
 
-
+/* 
 CREATE TRIGGER TRG_SISTEMAS_RefSistema
 ON SISTEMAS
 AFTER INSERT
@@ -2810,17 +2638,65 @@ GO
 -- -------------------------------------------------------------------
 --          5.1.1. SALDO POR PAGAR
 -- -------------------------------------------------------------------
-/*Calcular el importe pendiente de pago de un presupuesto.*/
+/*Recibe el identificador de un presupuesto y devuelve su saldo
+pendiente de pago. Si el presupuesto no existe, devuelve NULL.*/
 
+CREATE OR ALTER FUNCTION dbo.FN_CalcularSaldoPresupuesto
+(
+    @COD_Presupuesto INT
+)
+RETURNS DECIMAL(14,2)
+AS
+BEGIN
+    DECLARE @Saldo DECIMAL(14,2);
 
+    SELECT @Saldo = Saldo
+    FROM dbo.Presupuestos
+    WHERE COD_Presupuesto = @COD_Presupuesto;
+
+    RETURN @Saldo;
+END;
+GO
 
 
 
 -- -------------------------------------------------------------------
 --          5.1.2. DÍAS HASTA UNA ACTIVIDAD
 -- -------------------------------------------------------------------
-/*Calcular los días que faltan hasta la fecha de inicio de una actividad.*/ 
+/*Recibe el identificador de una actividad y calcula los días naturales
+que faltan desde la fecha actual hasta su fecha de inicio.
+- Resultado positivo: actividad futura.
+- Resultado cero: comienza hoy.
+- Resultado negativo: la fecha de inicio ya ha pasado.
+- Resultado NULL: actividad inexistente o sin fecha de inicio.*/ 
 
+CREATE OR ALTER FUNCTION dbo.FN_DiasHastaActividad
+(
+    @COD_Actividad INT
+)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @Dias INT;
+    DECLARE @FechaInicio DATETIME2;
+
+    SELECT @FechaInicio = FechaInicio
+    FROM dbo.Planificacion
+    WHERE COD_Actividad = @COD_Actividad;
+
+    IF @FechaInicio IS NULL
+        RETURN NULL;
+
+    SET @Dias = DATEDIFF
+    (
+        DAY,
+        CONVERT(DATE, GETDATE()),
+        CONVERT(DATE, @FechaInicio)
+    );
+
+    RETURN @Dias;
+END;
+GO
 
 
 
@@ -2830,46 +2706,261 @@ GO
 -- -------------------------------------------------------------------
 --          5.2.1. SISTEMAS POR PROPIEDAD
 -- -------------------------------------------------------------------
-/*Devolver los sistemas instalados en una propiedad, incluyendo
-proveedor, tipo, fecha de instalación y referencia.*/
+/*Recibe el identificador de una propiedad y devuelve los sistemas
+instalados en ella, incluyendo:
+- Identificador y referencia del sistema.
+- Nombre del proveedor.
+- Tipo de sistema.
+- Fecha de instalación.*/
 
+CREATE OR ALTER FUNCTION dbo.FN_SistemasPorPropiedad
+(
+    @COD_Propiedad INT
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT
+        S.COD_Sistema,
+        S.COD_Propiedad,
+        S.RefSistema,
+        P.Empresa AS Proveedor,
+        TS.TipoSistema,
+        S.FechaInstalacion
+    FROM dbo.Sistemas AS S
+    INNER JOIN dbo.Proveedores AS P
+        ON S.COD_Proveedor = P.COD_Proveedor
+    INNER JOIN dbo.Tipos_Sistemas AS TS
+        ON S.COD_TipoSistema = TS.COD_TipoSistema
+    WHERE S.COD_Propiedad = @COD_Propiedad
+);
+GO
 
+---- ****** COMPROBACIÓN DE FUNCIONES:
 
 
 
 -- ===================================================================
 --      6. VISTAS
 -- ===================================================================
-
-
 -- -------------------------------------------------------------------
---      5.1. INVENTARIO TÉCNICO
+--      6.1. INVENTARIO TÉCNICO
 -- -------------------------------------------------------------------
 /*Inventario de sistemas instalados en cada propiedad, con sus
 características y proveedores.*/
 
+CREATE OR ALTER VIEW dbo.VW_InventarioTecnico
+AS
+SELECT
+    S.COD_Sistema,
+    S.RefSistema,
+
+    -- Propiedad
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    P.DireccionPropiedad,
+    P.CodigoPostal,
+    P.Ciudad,
+    P.Provincia,
+
+    -- Espacio
+    E.COD_Espacio,
+    E.RefEspacio,
+    TE.TipoEspacio,
+
+    -- Proveedor
+    PR.COD_Proveedor,
+    PR.Empresa AS Proveedor,
+
+    -- Tipo de sistema
+    TS.COD_TipoSistema,
+    TS.TipoSistema,
+    CS.CatSistema AS CategoriaSistema,
+
+    -- Datos técnicos
+    S.FechaInstalacion,
+    S.DatosTecnicos,
+
+    -- Documento asociado
+    D.COD_Doc,
+    D.RefDoc,
+    D.URL_Doc
+
+FROM dbo.Sistemas AS S
+
+INNER JOIN dbo.Propiedades AS P
+    ON S.COD_Propiedad = P.COD_Propiedad
+
+INNER JOIN dbo.Proveedores AS PR
+    ON S.COD_Proveedor = PR.COD_Proveedor
+
+INNER JOIN dbo.Tipos_Sistemas AS TS
+    ON S.COD_TipoSistema = TS.COD_TipoSistema
+
+INNER JOIN dbo.Categorias_Sistemas AS CS
+    ON TS.COD_CatSistema = CS.COD_CatSistema
+
+LEFT JOIN dbo.Espacios AS E
+    ON S.COD_Espacio = E.COD_Espacio
+
+LEFT JOIN dbo.Tipos_Espacios AS TE
+    ON E.COD_TipoEspacio = TE.COD_TipoEspacio
+
+LEFT JOIN dbo.Documentos AS D
+    ON S.COD_Doc = D.COD_Doc;
+GO
+
 
 
 
 
 -- -------------------------------------------------------------------
---      5.2. PLANIFICACIÓN DE ACTIVIDADES
+--      6.2. PLANIFICACIÓN DE ACTIVIDADES
 -- -------------------------------------------------------------------
 /*Actividades planificadas, fechas, estados, propiedades y sistemas
 o servicios asociados.*/
 
+CREATE OR ALTER VIEW dbo.VW_PlanificacionActividades
+AS
+SELECT
+    P.COD_Actividad,
+    P.RefActividad,
 
+    -- Propiedad
+    PR.COD_Propiedad,
+    PR.RefPropiedad,
+    PR.DireccionPropiedad,
+    PR.Ciudad,
+
+    -- Tipo de actividad
+    TA.COD_TipoActividad,
+    TA.TipoActividad,
+
+    -- Estado de planificación
+    EP.COD_EstadoPlan,
+    EP.EstadoPlan,
+
+    -- Fechas y seguimiento
+    P.FechaInicio,
+    P.FechaFin,
+    P.FechaRecordatorio,
+    P.Comentarios,
+    P.RegistroInicial,
+    P.RegistroFinal,
+
+    -- Sistema relacionado
+    S.COD_Sistema,
+    S.RefSistema,
+    TS.TipoSistema,
+
+    -- Servicio relacionado
+    SV.COD_Servicio,
+    SV.RefServicio,
+    TServ.TipoServicio,
+
+    -- Documento asociado
+    D.COD_Doc,
+    D.RefDoc,
+    D.URL_Doc
+
+FROM dbo.Planificacion AS P
+
+INNER JOIN dbo.Propiedades AS PR
+    ON P.COD_Propiedad = PR.COD_Propiedad
+
+INNER JOIN dbo.Tipos_Actividades AS TA
+    ON P.COD_TipoActividad = TA.COD_TipoActividad
+
+INNER JOIN dbo.Estados_Planificacion AS EP
+    ON P.COD_EstadoPlan = EP.COD_EstadoPlan
+
+LEFT JOIN dbo.Sistemas AS S
+    ON P.COD_Sistema = S.COD_Sistema
+
+LEFT JOIN dbo.Tipos_Sistemas AS TS
+    ON S.COD_TipoSistema = TS.COD_TipoSistema
+
+LEFT JOIN dbo.Servicios AS SV
+    ON P.COD_Servicio = SV.COD_Servicio
+
+LEFT JOIN dbo.Tipos_Servicios AS TServ
+    ON SV.COD_TipoServicio = TServ.COD_TipoServicio
+
+LEFT JOIN dbo.Documentos AS D
+    ON P.COD_Doc = D.COD_Doc;
+GO
 
 
 
 
 -- -------------------------------------------------------------------
---      5.3. HISTÓRICO DE SERVICIOS
+--      6.3. HISTÓRICO DE SERVICIOS
 -- -------------------------------------------------------------------
 /*Servicios registrados por propiedad, espacio, proveedor y
 tipo de servicio.*/
 
+CREATE OR ALTER VIEW dbo.VW_HistoricoServicios
+AS
+SELECT
+    S.COD_Servicio,
+    S.RefServicio,
 
+    -- Propiedad
+    P.COD_Propiedad,
+    P.RefPropiedad,
+    P.DireccionPropiedad,
+    P.Ciudad,
+
+    -- Espacio
+    E.COD_Espacio,
+    E.RefEspacio,
+    TE.TipoEspacio,
+
+    -- Proveedor
+    PR.COD_Proveedor,
+    PR.Empresa AS Proveedor,
+
+    -- Tipo y categoría del servicio
+    TS.COD_TipoServicio,
+    TS.TipoServicio,
+    CS.CatServicio AS CategoriaServicio,
+
+    -- Información del servicio
+    S.Especificaciones,
+
+    -- Documento asociado
+    D.COD_Doc,
+    D.RefDoc,
+    TD.TipoDoc,
+    D.URL_Doc
+
+FROM dbo.Servicios AS S
+
+INNER JOIN dbo.Propiedades AS P
+    ON S.COD_Propiedad = P.COD_Propiedad
+
+INNER JOIN dbo.Proveedores AS PR
+    ON S.COD_Proveedor = PR.COD_Proveedor
+
+INNER JOIN dbo.Tipos_Servicios AS TS
+    ON S.COD_TipoServicio = TS.COD_TipoServicio
+
+INNER JOIN dbo.Categorias_Servicios AS CS
+    ON TS.COD_CatServicio = CS.COD_CatServicio
+
+LEFT JOIN dbo.Espacios AS E
+    ON S.COD_Espacio = E.COD_Espacio
+
+LEFT JOIN dbo.Tipos_Espacios AS TE
+    ON E.COD_TipoEspacio = TE.COD_TipoEspacio
+
+LEFT JOIN dbo.Documentos AS D
+    ON S.COD_Doc = D.COD_Doc
+
+LEFT JOIN dbo.Tipos_Documentos AS TD
+    ON D.COD_TipoDoc = TD.COD_TipoDoc;
+GO
 
 
 
@@ -2877,12 +2968,10 @@ tipo de servicio.*/
 
 
 -- ===================================================================
---      6. AGRUPACIÓN Y AGREGACIÓN
+--      7. AGRUPACIÓN Y AGREGACIÓN
 -- ===================================================================
-
-
 -- -------------------------------------------------------------------
---      6.1. ACTIVIDADES POR ESTADO 
+--      7.1. ACTIVIDADES POR ESTADO 
 -- -------------------------------------------------------------------
 /*Número de actividades pendientes, programadas, en curso y
 finalizadas.*/
@@ -2892,7 +2981,7 @@ finalizadas.*/
 
 
 -- -------------------------------------------------------------------
---      6.2. SISTEMAS POR PROPIEDAD
+--      7.2. SISTEMAS POR PROPIEDAD
 -- -------------------------------------------------------------------
 /*Número y clasificación de instalaciones existentes en cada
 propiedad.*/
@@ -2905,7 +2994,7 @@ propiedad.*/
 
 
 -- -------------------------------------------------------------------
---      6.3. SERVICIOS POR PROVEEDOR
+--      7.3. SERVICIOS POR PROVEEDOR
 -- -------------------------------------------------------------------
 /*Contabilizar los servicios asociados a cada proveedor.*/
 
@@ -2915,7 +3004,7 @@ propiedad.*/
 
 
 -- -------------------------------------------------------------------
---      6.4. PRESUPUESTOS POR PROPIEDAD
+--      7.4. PRESUPUESTOS POR PROPIEDAD
 -- -------------------------------------------------------------------
 /*Calcular el importe total presupuestado por propiedad (SUM).*/
 
@@ -2927,7 +3016,7 @@ propiedad.*/
 
 
 -- -------------------------------------------------------------------
---      6.5. ACTIVIDADES POR TIPO
+--      7.5. ACTIVIDADES POR TIPO
 -- -------------------------------------------------------------------
 /*Distribución de trabajos de mantenimiento, instalaciones,
 reparaciones, inspecciones, etc.*/
@@ -2936,12 +3025,10 @@ reparaciones, inspecciones, etc.*/
 
 
 -- ===================================================================
---      7. CONSULTAS XML
+--      8. CONSULTAS XML
 -- ===================================================================
-
-
 -- -------------------------------------------------------------------
---      7.1. SERVICIOS - ESPECIFICACIONES
+--      8.1. SERVICIOS - ESPECIFICACIONES
 -- -------------------------------------------------------------------
 /*Consultar horarios, características y condiciones de los servicios.*/
 
@@ -2950,7 +3037,7 @@ reparaciones, inspecciones, etc.*/
 
 
 -- -------------------------------------------------------------------
---      7.2. SISTEMAS - DATOS TÉCNICOS
+--      8.2. SISTEMAS - DATOS TÉCNICOS
 -- -------------------------------------------------------------------
 /*Consultar marcas, modelos y características técnicas de los
 sistemas instalados.*/
@@ -2962,9 +3049,8 @@ sistemas instalados.*/
 
 
 -- ===================================================================
---      8. USUARIOS Y ROLES
+--      9. USUARIOS Y ROLES
 -- ===================================================================
-
 -- -------------------------------------------------------------------
 --      8.1. ADMINISTRADOR
 -- -------------------------------------------------------------------
