@@ -22,7 +22,6 @@ GO
 -- ===================================================================
 --      2. CREACIÓN DE TABLAS E INSERCIÓN DE DATOS DE PRUEBA
 -- ===================================================================
-
 -- -------------------------------------------------------------------
 --      2.1. CLIENTES
 -- -------------------------------------------------------------------
@@ -131,17 +130,6 @@ GO
 SELECT * FROM Clientes;
 GO
 
-/*
-ALTER TABLE Clientes
-SET (SYSTEM_VERSIONING = OFF);
-GO
-
-DROP TABLE Clientes;
-GO
-
-DROP TABLE Clientes_Historico;
-GO
-*/
 
 
 -- -------------------------------------------------------------------
@@ -325,18 +313,6 @@ GO
 
 SELECT * FROM Proveedores;
 GO
-
-/*
-ALTER TABLE Proveedores
-SET (SYSTEM_VERSIONING = OFF);
-GO
-
-DROP TABLE Proveedores;
-GO
-
-DROP TABLE Proveedores_Historico;
-GO
-*/
 
 
 -- -------------------------------------------------------------------
@@ -1024,37 +1000,31 @@ select * from ESPACIOS
 --      2.15. DOCUMENTOS
 -- -------------------------------------------------------------------
 
-/* CREATE TABLE DOCUMENTOS
+CREATE TABLE Documentos
 (
     COD_Doc INT IDENTITY(1,1)
-        CONSTRAINT PK_DOCUMENTOS PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
-    COD_TipoDoc INT NOT NULL,
-
+        CONSTRAINT PK_Documentos PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT FK_Documentos_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
+    COD_TipoDoc INT NOT NULL
+        CONSTRAINT FK_Documentos_Tipos FOREIGN KEY
+        REFERENCES Tipos_Documentos,
     RefDoc NVARCHAR(50) NULL,
-
     URL_Doc NVARCHAR(4000) NOT NULL,
-
-    CONSTRAINT FK_DOCUMENTOS_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_DOCUMENTOS_TIPOS
-        FOREIGN KEY (COD_TipoDoc)
-        REFERENCES TIPOS_DOCUMENTOS (COD_TipoDoc)
 );
 GO
 
+ 
 -- Referencia única cuando contiene un valor
-CREATE UNIQUE INDEX UX_DOCUMENTOS_RefDoc
-ON DOCUMENTOS (RefDoc)
+CREATE UNIQUE INDEX UX_Documentos_RefDoc
+ON Documentos (RefDoc)
 WHERE RefDoc IS NOT NULL;
 GO
 
 -- trigger admite inserciones múltiples y genera una referencia para cada documento
-CREATE TRIGGER TRG_DOCUMENTOS_RefDoc
-ON DOCUMENTOS
+CREATE TRIGGER TRG_Documentos_RefDoc
+ON Documentos
 AFTER INSERT
 AS
 BEGIN
@@ -1066,15 +1036,16 @@ BEGIN
         '-', TD.TipoDoc,
         '-', I.COD_Doc
     )
-    FROM DOCUMENTOS AS D
+    FROM Documentos AS D
     INNER JOIN INSERTED AS I
         ON D.COD_Doc = I.COD_Doc
-    INNER JOIN TIPOS_DOCUMENTOS AS TD
+    INNER JOIN Tipos_Documentos AS TD
         ON I.COD_TipoDoc = TD.COD_TipoDoc;
 END;
 GO
 
-INSERT INTO DOCUMENTOS
+
+INSERT INTO Documentos
 (
     COD_Propiedad,
     COD_TipoDoc,
@@ -1098,10 +1069,11 @@ FROM
         N'https://drive.google.com/file/d/1stBMSeuwY69RS7OyLim7mubKe4k32e0u/view?usp=sharing'
     )
 ) AS V (COD_Propiedad, TipoDoc, URL_Doc)
-INNER JOIN TIPOS_DOCUMENTOS AS TD
+INNER JOIN Tipos_Documentos AS TD
     ON TD.TipoDoc = V.TipoDoc;
 GO
 
+/*
 -- comprobar los registros insertados
 SELECT
     D.COD_Doc,
@@ -1118,7 +1090,8 @@ INNER JOIN TIPOS_DOCUMENTOS AS TD
 ORDER BY D.COD_Doc;
 GO */
 
-
+SELECT * FROM Documentos;
+GO
 
 -- -------------------------------------------------------------------
 --      2.16. SERVICIOS
@@ -1760,7 +1733,1261 @@ select * from PLANIFICACION
 -- ===================================================================
 --      3. PROCEDIMIENTOS ALMACENADOS
 -- ===================================================================
+-- -------------------------------------------------------------------
+--      3.1. REGISTRAR UN SISTEMA
+-- -------------------------------------------------------------------
+/* Registrar un nuevo sistema instalado en una propiedad,
+incluyendo sus datos técnicos en el campo XML.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarSistema
+    @COD_Propiedad INT,
+    @COD_Proveedor INT,
+    @COD_TipoSistema INT,
+    @FechaInstalacion DATETIME2,
+    @DatosTecnicos XML = NULL,
+    @COD_Espacio INT = NULL,
+    @COD_Doc INT = NULL,
+    @COD_Sistema INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Sistema = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- Comprobar que existe la propiedad.
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+            THROW 50001, 'La propiedad indicada no existe.', 1;
+
+        -- Comprobar que el proveedor existe.
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Proveedores
+            WHERE COD_Proveedor = @COD_Proveedor
+        )
+            THROW 50002, 'El proveedor indicado no existe.', 1;
+
+        -- Comprobar que el tipo de sistema existe y está activo.
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Sistemas
+            WHERE COD_TipoSistema = @COD_TipoSistema
+              AND Activo = 1
+        )
+            THROW 50003, 'El tipo de sistema no existe o está inactivo.', 1;
+
+        -- Si se indica un espacio, debe pertenecer a la propiedad.
+        IF @COD_Espacio IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Espacios
+                WHERE COD_Espacio = @COD_Espacio
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50004, 'El espacio no pertenece a la propiedad indicada.', 1;
+
+        -- Si se indica un documento, debe pertenecer a la propiedad.
+        IF @COD_Doc IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Documentos
+                WHERE COD_Doc = @COD_Doc
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50005, 'El documento no pertenece a la propiedad indicada.', 1;
+
+        INSERT INTO dbo.Sistemas
+        (
+            COD_Propiedad,
+            COD_Espacio,
+            COD_Proveedor,
+            COD_TipoSistema,
+            DatosTecnicos,
+            FechaInstalacion,
+            COD_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_Espacio,
+            @COD_Proveedor,
+            @COD_TipoSistema,
+            @DatosTecnicos,
+            @FechaInstalacion,
+            @COD_Doc
+        );
+
+        SET @COD_Sistema = CONVERT(INT, SCOPE_IDENTITY());
+
+        COMMIT TRANSACTION;
+
+        -- Devolver el registro creado, incluida la referencia generada por el trigger.
+        SELECT
+            COD_Sistema,
+            RefSistema,
+            COD_Propiedad,
+            COD_Proveedor,
+            COD_TipoSistema,
+            FechaInstalacion,
+            DatosTecnicos
+        FROM dbo.Sistemas
+        WHERE COD_Sistema = @COD_Sistema;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+
+
+-- INSERTAR DATOS DE PRUEBA
+DECLARE @NuevoSistema INT;
+DECLARE @ProveedorSaltoki INT;
+DECLARE @TipoRecuperador INT;
+
+SELECT @ProveedorSaltoki = COD_Proveedor
+FROM dbo.Proveedores
+WHERE Empresa = N'Saltoki';
+
+SELECT @TipoRecuperador = COD_TipoSistema
+FROM dbo.Tipos_Sistemas
+WHERE TipoSistema = N'RECUPERADOR_CALOR'
+  AND Activo = 1;
+
+IF @ProveedorSaltoki IS NULL OR @TipoRecuperador IS NULL
+    THROW 50101, 'No se encuentra el proveedor o el tipo de sistema para la prueba.', 1;
+
+EXEC dbo.SP_RegistrarSistema
+    @COD_Propiedad = 1,
+    @COD_Proveedor = @ProveedorSaltoki,
+    @COD_TipoSistema = @TipoRecuperador,
+    @FechaInstalacion = '2026-11-01',
+    @DatosTecnicos = N'
+        <Sistema>
+            <Marca>SIBER</Marca>
+            <Modelo>DF EVO 2</Modelo>
+            <Tipo>Recuperador de calor</Tipo>
+            <Caracteristicas>
+                <CaudalMax>200 m3/h</CaudalMax>
+                <Domotica>KNX - Modbus</Domotica>
+                <ClaseFiltro>Coarse 65% (G4)</ClaseFiltro>
+            </Caracteristicas>
+        </Sistema>',
+    @COD_Doc = @NuevoDocumento,
+    @COD_Sistema = @NuevoSistema OUTPUT;
+
+PRINT CONCAT('Sistema registrado. COD_Sistema: ', @NuevoSistema);
 
 
 
 
+-- -------------------------------------------------------------------
+--      3.2. REGISTRAR UN SERVICIO
+-- -------------------------------------------------------------------
+/*Registrar un servicio asociado a una propiedad, espacio y proveedor.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarServicio
+    @COD_Propiedad INT,
+    @COD_Proveedor INT,
+    @COD_TipoServicio INT,
+    @COD_Servicio INT OUTPUT,
+    @COD_Espacio INT = NULL,
+    @Especificaciones XML = NULL,
+    @COD_Doc INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Servicio = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+            THROW 50011, 'La propiedad indicada no existe.', 1;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Proveedores
+            WHERE COD_Proveedor = @COD_Proveedor
+        )
+            THROW 50012, 'El proveedor indicado no existe.', 1;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Servicios
+            WHERE COD_TipoServicio = @COD_TipoServicio
+              AND Activo = 1
+        )
+            THROW 50013, 'El tipo de servicio no existe o está inactivo.', 1;
+
+        IF @COD_Espacio IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Espacios
+                WHERE COD_Espacio = @COD_Espacio
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50014, 'El espacio no pertenece a la propiedad indicada.', 1;
+
+        IF @COD_Doc IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Documentos
+                WHERE COD_Doc = @COD_Doc
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50015, 'El documento no pertenece a la propiedad indicada.', 1;
+
+        INSERT INTO dbo.Servicios
+        (
+            COD_Propiedad,
+            COD_Espacio,
+            COD_Proveedor,
+            COD_TipoServicio,
+            Especificaciones,
+            COD_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_Espacio,
+            @COD_Proveedor,
+            @COD_TipoServicio,
+            @Especificaciones,
+            @COD_Doc
+        );
+
+        SET @COD_Servicio = CONVERT(INT, SCOPE_IDENTITY());
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            COD_Servicio,
+            RefServicio,
+            COD_Propiedad,
+            COD_Espacio,
+            COD_Proveedor,
+            COD_TipoServicio,
+            Especificaciones,
+            COD_Doc
+        FROM dbo.Servicios
+        WHERE COD_Servicio = @COD_Servicio;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+
+
+
+
+-- INSERTAR DATOS DE PRUEBA
+DECLARE @NuevoServicio INT;
+DECLARE @TipoFiltros INT;
+DECLARE @EspacioCocina INT;
+
+SELECT @TipoFiltros = COD_TipoServicio
+FROM dbo.Tipos_Servicios
+WHERE TipoServicio = N'FILTROS'
+  AND Activo = 1;
+
+SELECT TOP (1) @EspacioCocina = E.COD_Espacio
+FROM dbo.Espacios AS E
+INNER JOIN dbo.Tipos_Espacios AS TE
+    ON E.COD_TipoEspacio = TE.COD_TipoEspacio
+WHERE E.COD_Propiedad = 1
+  AND TE.TipoEspacio = N'COCINA'
+ORDER BY E.COD_Espacio;
+
+IF @TipoFiltros IS NULL
+    THROW 50102, 'No se encuentra el tipo de servicio FILTROS.', 1;
+
+IF @EspacioCocina IS NULL
+    THROW 50103, 'No se encuentra un espacio de tipo COCINA en la propiedad 1.', 1;
+
+EXEC dbo.SP_RegistrarServicio
+    @COD_Propiedad = 1,
+    @COD_Espacio = @EspacioCocina,
+    @COD_Proveedor = @ProveedorSaltoki,
+    @COD_TipoServicio = @TipoFiltros,
+    @Especificaciones = N'
+        <Detalles>
+            <Caracteristicas>
+                <Filtro>F7</Filtro>
+                <Descripcion>Filtro ISO ePM1 55%</Descripcion>
+            </Caracteristicas>
+            <Mantenimiento>
+                <Frecuencia>Semestral</Frecuencia>
+                <Recomendacion>Revisar y sustituir los filtros</Recomendacion>
+            </Mantenimiento>
+        </Detalles>',
+    @COD_Doc = @NuevoDocumento,
+    @COD_Servicio = @NuevoServicio OUTPUT;
+
+PRINT CONCAT('Servicio registrado. COD_Servicio: ', @NuevoServicio);
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      3.3. PROGRAMAR UNA ACTIVIDAD
+-- -------------------------------------------------------------------
+/*Planificar una actividad técnica, indicando fechas, tipo, estado y
+sistema o servicio relacionado.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_ProgramarActividad
+    @COD_Propiedad INT,
+    @COD_TipoActividad INT,
+    @EstadoPlan NVARCHAR(30),
+    @COD_Actividad INT OUTPUT,
+    @FechaInicio DATETIME2 = NULL,
+    @FechaFin DATETIME2 = NULL,
+    @COD_Sistema INT = NULL,
+    @COD_Servicio INT = NULL,
+    @Comentarios NVARCHAR(MAX) = NULL,
+    @FechaRecordatorio DATETIME2 = NULL,
+    @COD_Doc INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Actividad = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+            THROW 50021, 'La propiedad indicada no existe.', 1;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Actividades
+            WHERE COD_TipoActividad = @COD_TipoActividad
+              AND Activo = 1
+        )
+            THROW 50022, 'El tipo de actividad no existe o está inactivo.', 1;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Estados_Planificacion
+            WHERE EstadoPlan = @EstadoPlan
+              AND Activo = 1
+        )
+            THROW 50023, 'El estado indicado no existe o está inactivo.', 1;
+
+        IF @FechaInicio IS NOT NULL
+           AND @FechaFin IS NOT NULL
+           AND @FechaFin < @FechaInicio
+            THROW 50024, 'La fecha de finalización no puede ser anterior a la fecha de inicio.', 1;
+
+        IF @COD_Sistema IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Sistemas
+                WHERE COD_Sistema = @COD_Sistema
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50025, 'El sistema no pertenece a la propiedad indicada.', 1;
+
+        IF @COD_Servicio IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Servicios
+                WHERE COD_Servicio = @COD_Servicio
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50026, 'El servicio no pertenece a la propiedad indicada.', 1;
+
+        IF @COD_Doc IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Documentos
+                WHERE COD_Doc = @COD_Doc
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+            THROW 50027, 'El documento no pertenece a la propiedad indicada.', 1;
+
+        DECLARE @COD_EstadoPlan INT;
+
+        SELECT @COD_EstadoPlan = COD_EstadoPlan
+        FROM dbo.Estados_Planificacion
+        WHERE EstadoPlan = @EstadoPlan
+          AND Activo = 1;
+
+        INSERT INTO dbo.Planificacion
+        (
+            COD_Propiedad,
+            COD_TipoActividad,
+            COD_Sistema,
+            COD_Servicio,
+            COD_EstadoPlan,
+            FechaInicio,
+            FechaFin,
+            Comentarios,
+            FechaRecordatorio,
+            COD_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_TipoActividad,
+            @COD_Sistema,
+            @COD_Servicio,
+            @COD_EstadoPlan,
+            @FechaInicio,
+            @FechaFin,
+            @Comentarios,
+            @FechaRecordatorio,
+            @COD_Doc
+        );
+
+        SET @COD_Actividad = CONVERT(INT, SCOPE_IDENTITY());
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            COD_Actividad,
+            RefActividad,
+            COD_Propiedad,
+            COD_TipoActividad,
+            COD_Sistema,
+            COD_Servicio,
+            COD_EstadoPlan,
+            FechaInicio,
+            FechaFin,
+            Comentarios,
+            FechaRecordatorio
+        FROM dbo.Planificacion
+        WHERE COD_Actividad = @COD_Actividad;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+
+-- INSERTAR DATOS DE PRUEBA
+DECLARE @NuevaActividad INT;
+DECLARE @TipoInspeccion INT;
+
+SELECT @TipoInspeccion = COD_TipoActividad
+FROM dbo.Tipos_Actividades
+WHERE TipoActividad = N'INSPECCIONAR'
+  AND Activo = 1;
+
+IF @TipoInspeccion IS NULL
+    THROW 50104, 'No se encuentra el tipo de actividad INSPECCIONAR.', 1;
+
+EXEC dbo.SP_ProgramarActividad
+    @COD_Propiedad = 1,
+    @COD_TipoActividad = @TipoInspeccion,
+    @EstadoPlan = N'PROGRAMADO',
+    @FechaInicio = '2026-12-01 09:00:00',
+    @FechaFin = '2026-12-01 11:00:00',
+    @COD_Sistema = @NuevoSistema,
+    @COD_Servicio = @NuevoServicio,
+    @Comentarios = N'Revisión del recuperador de calor y sustitución de filtros.',
+    @FechaRecordatorio = '2026-11-28 09:00:00',
+    @COD_Doc = @NuevoDocumento,
+    @COD_Actividad = @NuevaActividad OUTPUT;
+
+PRINT CONCAT('Actividad registrada. COD_Actividad: ', @NuevaActividad);
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      3.4. MODIFICAR EL ESTADO DE UNA ACTIVIDAD
+-- -------------------------------------------------------------------
+/*Cambiar el estado de una actividad: pendiente, programada, en curso,
+finalizada, etc.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_ModificarEstadoActividad
+    @COD_Actividad INT,
+    @EstadoPlan NVARCHAR(30)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Planificacion
+            WHERE COD_Actividad = @COD_Actividad
+        )
+            THROW 50031, 'La actividad indicada no existe.', 1;
+
+        DECLARE @COD_EstadoPlan INT;
+
+        SELECT @COD_EstadoPlan = COD_EstadoPlan
+        FROM dbo.Estados_Planificacion
+        WHERE EstadoPlan = @EstadoPlan
+          AND Activo = 1;
+
+        IF @COD_EstadoPlan IS NULL
+            THROW 50032, 'El estado indicado no existe o está inactivo.', 1;
+
+        UPDATE dbo.Planificacion
+        SET COD_EstadoPlan = @COD_EstadoPlan,
+            RegistroFinal = SYSDATETIME()
+        WHERE COD_Actividad = @COD_Actividad;
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            P.COD_Actividad,
+            P.RefActividad,
+            EP.EstadoPlan,
+            P.FechaInicio,
+            P.FechaFin,
+            P.RegistroFinal
+        FROM dbo.Planificacion AS P
+        INNER JOIN dbo.Estados_Planificacion AS EP
+            ON P.COD_EstadoPlan = EP.COD_EstadoPlan
+        WHERE P.COD_Actividad = @COD_Actividad;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+
+
+
+-- INSERTAR DATOS DE PRUEBA
+EXEC dbo.SP_ModificarEstadoActividad
+    @COD_Actividad = @NuevaActividad,
+    @EstadoPlan = N'EN CURSO';
+
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      3.5. REGISTRAR UN DOCUMENTO
+-- -------------------------------------------------------------------
+/*Incorporar documentación técnica asociada a una propiedad.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarDocumento
+    @COD_Propiedad INT,
+    @TipoDoc NVARCHAR(100),
+    @URL_Doc NVARCHAR(4000),
+    @COD_Doc INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Doc = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+            THROW 50041, 'La propiedad indicada no existe.', 1;
+
+        DECLARE @COD_TipoDoc INT;
+
+        SELECT @COD_TipoDoc = COD_TipoDoc
+        FROM dbo.Tipos_Documentos
+        WHERE TipoDoc = @TipoDoc
+          AND Activo = 1;
+
+        IF @COD_TipoDoc IS NULL
+            THROW 50042, 'El tipo de documento no existe o está inactivo.', 1;
+
+        IF NULLIF(LTRIM(RTRIM(@URL_Doc)), N'') IS NULL
+            THROW 50043, 'La URL del documento es obligatoria.', 1;
+
+        INSERT INTO dbo.Documentos
+        (
+            COD_Propiedad,
+            COD_TipoDoc,
+            URL_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_TipoDoc,
+            @URL_Doc
+        );
+
+        SET @COD_Doc = CONVERT(INT, SCOPE_IDENTITY());
+
+        COMMIT TRANSACTION;
+
+        SELECT
+            D.COD_Doc,
+            D.RefDoc,
+            D.COD_Propiedad,
+            TD.TipoDoc,
+            D.URL_Doc
+        FROM dbo.Documentos AS D
+        INNER JOIN dbo.Tipos_Documentos AS TD
+            ON D.COD_TipoDoc = TD.COD_TipoDoc
+        WHERE D.COD_Doc = @COD_Doc;
+
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+-- INSERTAR DATOS DE PRUEBA
+DECLARE @NuevoDocumento INT;
+
+EXEC dbo.SP_RegistrarDocumento
+    @COD_Propiedad = 1,
+    @TipoDoc = N'FICHA_TECNICA',
+    @URL_Doc = N'https://ejemplo.com/documentacion/recuperador-calor.pdf',
+    @COD_Doc = @NuevoDocumento OUTPUT;
+
+PRINT CONCAT('Documento registrado. COD_Doc: ', @NuevoDocumento);
+
+
+-- ******** COMPROBACIÓN FINAL
+SELECT
+    P.COD_Actividad,
+    P.RefActividad,
+    PR.RefPropiedad,
+    TA.TipoActividad,
+    EP.EstadoPlan,
+    S.RefSistema,
+    SV.RefServicio,
+    P.FechaInicio,
+    P.FechaFin,
+    P.Comentarios
+FROM dbo.Planificacion AS P
+INNER JOIN dbo.Propiedades AS PR
+    ON P.COD_Propiedad = PR.COD_Propiedad
+INNER JOIN dbo.Tipos_Actividades AS TA
+    ON P.COD_TipoActividad = TA.COD_TipoActividad
+INNER JOIN dbo.Estados_Planificacion AS EP
+    ON P.COD_EstadoPlan = EP.COD_EstadoPlan
+LEFT JOIN dbo.Sistemas AS S
+    ON P.COD_Sistema = S.COD_Sistema
+LEFT JOIN dbo.Servicios AS SV
+    ON P.COD_Servicio = SV.COD_Servicio
+WHERE P.COD_Actividad = @NuevaActividad;
+GO
+
+
+-- ===================================================================
+--      4. PROCEDIMIENTOS TRANSACCIONALES
+-- ===================================================================
+-- -------------------------------------------------------------------
+--      4.1. REGISTRAR UN SISTEMA COMPLETO
+-- -------------------------------------------------------------------
+/*Este procedimiento realiza las siguientes operaciones:
+1. Comprueba que existen la propiedad, el proveedor y el tipo de sistema.
+2. Comprueba que el espacio, si se indica, pertenece a la propiedad.
+3. Comprueba que el tipo de documento existe y está activo.
+4. Inserta el documento técnico en Documentos.
+5. Recupera el identificador del documento.
+6. Inserta el sistema en Sistemas, vinculándolo al documento.
+7. Confirma ambas inserciones mediante COMMIT.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarSistemaCompleto
+    @COD_Propiedad INT,
+    @COD_Proveedor INT,
+    @COD_TipoSistema INT,
+    @FechaInstalacion DATETIME2,
+    @TipoDoc NVARCHAR(100),
+    @URL_Doc NVARCHAR(4000),
+    @COD_Sistema INT OUTPUT,
+    @COD_Doc INT OUTPUT,
+    @COD_Espacio INT = NULL,
+    @DatosTecnicos XML = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Sistema = NULL;
+    SET @COD_Doc = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- 1. Validar propiedad
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+        BEGIN
+            ;THROW 50051, 'La propiedad indicada no existe.', 1;
+        END;
+
+        -- 2. Validar proveedor
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Proveedores
+            WHERE COD_Proveedor = @COD_Proveedor
+        )
+        BEGIN
+            ;THROW 50052, 'El proveedor indicado no existe.', 1;
+        END;
+
+        -- 3. Validar tipo de sistema
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Sistemas
+            WHERE COD_TipoSistema = @COD_TipoSistema
+              AND Activo = 1
+        )
+        BEGIN
+            ;THROW 50053, 'El tipo de sistema no existe o está inactivo.', 1;
+        END;
+
+        -- 4. Validar espacio y propiedad
+        IF @COD_Espacio IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Espacios
+                WHERE COD_Espacio = @COD_Espacio
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+        BEGIN
+            ;THROW 50054, 'El espacio no pertenece a la propiedad indicada.', 1;
+        END;
+
+        -- 5. Validar tipo de documento
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Documentos
+            WHERE TipoDoc = @TipoDoc
+              AND Activo = 1
+        )
+        BEGIN
+            ;THROW 50055, 'El tipo de documento no existe o está inactivo.', 1;
+        END;
+
+        -- 6. Validar URL
+        IF NULLIF(LTRIM(RTRIM(@URL_Doc)), N'') IS NULL
+        BEGIN
+            ;THROW 50056, 'La URL del documento es obligatoria.', 1;
+        END;
+
+        -- 7. Obtener identificador del tipo de documento
+        DECLARE @COD_TipoDoc INT;
+
+        SELECT @COD_TipoDoc = COD_TipoDoc
+        FROM dbo.Tipos_Documentos
+        WHERE TipoDoc = @TipoDoc
+          AND Activo = 1;
+
+        -- 8. Insertar documento técnico
+        INSERT INTO dbo.Documentos
+        (
+            COD_Propiedad,
+            COD_TipoDoc,
+            URL_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_TipoDoc,
+            @URL_Doc
+        );
+
+        SET @COD_Doc = CONVERT(INT, SCOPE_IDENTITY());
+
+        -- 9. Insertar sistema y vincular el documento
+        INSERT INTO dbo.Sistemas
+        (
+            COD_Propiedad,
+            COD_Espacio,
+            COD_Proveedor,
+            COD_TipoSistema,
+            DatosTecnicos,
+            FechaInstalacion,
+            COD_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_Espacio,
+            @COD_Proveedor,
+            @COD_TipoSistema,
+            @DatosTecnicos,
+            @FechaInstalacion,
+            @COD_Doc
+        );
+
+        SET @COD_Sistema = CONVERT(INT, SCOPE_IDENTITY());
+
+        -- 10. Confirmar ambas operaciones
+        COMMIT TRANSACTION;
+
+        -- 11. Mostrar el resultado
+        SELECT
+            S.COD_Sistema,
+            S.RefSistema,
+            S.COD_Propiedad,
+            S.COD_Proveedor,
+            S.COD_TipoSistema,
+            S.FechaInstalacion,
+            S.DatosTecnicos,
+            D.COD_Doc,
+            D.RefDoc,
+            TD.TipoDoc,
+            D.URL_Doc
+        FROM dbo.Sistemas AS S
+        INNER JOIN dbo.Documentos AS D
+            ON S.COD_Doc = D.COD_Doc
+        INNER JOIN dbo.Tipos_Documentos AS TD
+            ON D.COD_TipoDoc = TD.COD_TipoDoc
+        WHERE S.COD_Sistema = @COD_Sistema;
+
+    END TRY
+    BEGIN CATCH
+
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        SET @COD_Sistema = NULL;
+        SET @COD_Doc = NULL;
+
+        THROW;
+
+    END CATCH;
+END;
+GO
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      4.2. REGISTRAR UN SERVICIO COMPLETO
+-- -------------------------------------------------------------------
+/*Este procedimiento realiza las siguientes operaciones:
+1. Comprueba la propiedad, el proveedor y el tipo de servicio.
+2. Comprueba que el espacio pertenece a la propiedad, si se ha indicado.
+3. Comprueba que el tipo de documento está activo.
+4. Inserta el documento en Documentos.
+5. Recupera su identificador.
+6. Inserta el servicio en Servicios, vinculando el documento y el resto de entidades.
+7. Confirma la transacción.*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarServicioCompleto
+    @COD_Propiedad INT,
+    @COD_Proveedor INT,
+    @COD_TipoServicio INT,
+    @TipoDoc NVARCHAR(100),
+    @URL_Doc NVARCHAR(4000),
+    @COD_Servicio INT OUTPUT,
+    @COD_Doc INT OUTPUT,
+    @COD_Espacio INT = NULL,
+    @Especificaciones XML = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @COD_Servicio = NULL;
+    SET @COD_Doc = NULL;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- 1. Validar propiedad
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Propiedades
+            WHERE COD_Propiedad = @COD_Propiedad
+        )
+        BEGIN
+            ;THROW 50061, 'La propiedad indicada no existe.', 1;
+        END;
+
+        -- 2. Validar proveedor
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Proveedores
+            WHERE COD_Proveedor = @COD_Proveedor
+        )
+        BEGIN
+            ;THROW 50062, 'El proveedor indicado no existe.', 1;
+        END;
+
+        -- 3. Validar tipo de servicio
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Servicios
+            WHERE COD_TipoServicio = @COD_TipoServicio
+              AND Activo = 1
+        )
+        BEGIN
+            ;THROW 50063, 'El tipo de servicio no existe o está inactivo.', 1;
+        END;
+
+        -- 4. Validar espacio y propiedad
+        IF @COD_Espacio IS NOT NULL
+           AND NOT EXISTS (
+                SELECT 1
+                FROM dbo.Espacios
+                WHERE COD_Espacio = @COD_Espacio
+                  AND COD_Propiedad = @COD_Propiedad
+           )
+        BEGIN
+            ;THROW 50064, 'El espacio no pertenece a la propiedad indicada.', 1;
+        END;
+
+        -- 5. Validar tipo de documento
+        IF NOT EXISTS (
+            SELECT 1
+            FROM dbo.Tipos_Documentos
+            WHERE TipoDoc = @TipoDoc
+              AND Activo = 1
+        )
+        BEGIN
+            ;THROW 50065, 'El tipo de documento no existe o está inactivo.', 1;
+        END;
+
+        -- 6. Validar URL
+        IF NULLIF(LTRIM(RTRIM(@URL_Doc)), N'') IS NULL
+        BEGIN
+            ;THROW 50066, 'La URL del documento es obligatoria.', 1;
+        END;
+
+        -- 7. Obtener identificador del tipo de documento
+        DECLARE @COD_TipoDoc INT;
+
+        SELECT @COD_TipoDoc = COD_TipoDoc
+        FROM dbo.Tipos_Documentos
+        WHERE TipoDoc = @TipoDoc
+          AND Activo = 1;
+
+        -- 8. Insertar documentación del servicio
+        INSERT INTO dbo.Documentos
+        (
+            COD_Propiedad,
+            COD_TipoDoc,
+            URL_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_TipoDoc,
+            @URL_Doc
+        );
+
+        SET @COD_Doc = CONVERT(INT, SCOPE_IDENTITY());
+
+        -- 9. Insertar servicio y vincular el documento
+        INSERT INTO dbo.Servicios
+        (
+            COD_Propiedad,
+            COD_Espacio,
+            COD_Proveedor,
+            COD_TipoServicio,
+            Especificaciones,
+            COD_Doc
+        )
+        VALUES
+        (
+            @COD_Propiedad,
+            @COD_Espacio,
+            @COD_Proveedor,
+            @COD_TipoServicio,
+            @Especificaciones,
+            @COD_Doc
+        );
+
+        SET @COD_Servicio = CONVERT(INT, SCOPE_IDENTITY());
+
+        -- 10. Confirmar ambas operaciones
+        COMMIT TRANSACTION;
+
+        -- 11. Mostrar el resultado
+        SELECT
+            S.COD_Servicio,
+            S.RefServicio,
+            S.COD_Propiedad,
+            S.COD_Espacio,
+            S.COD_Proveedor,
+            S.COD_TipoServicio,
+            S.Especificaciones,
+            D.COD_Doc,
+            D.RefDoc,
+            TD.TipoDoc,
+            D.URL_Doc
+        FROM dbo.Servicios AS S
+        INNER JOIN dbo.Documentos AS D
+            ON S.COD_Doc = D.COD_Doc
+        INNER JOIN dbo.Tipos_Documentos AS TD
+            ON D.COD_TipoDoc = TD.COD_TipoDoc
+        WHERE S.COD_Servicio = @COD_Servicio;
+
+    END TRY
+    BEGIN CATCH
+
+        IF XACT_STATE() <> 0
+            ROLLBACK TRANSACTION;
+
+        SET @COD_Servicio = NULL;
+        SET @COD_Doc = NULL;
+
+        THROW;
+
+    END CATCH;
+END;
+GO
+
+
+
+
+
+
+
+-- ===================================================================
+--      5. FUNCIONES
+-- ===================================================================
+-- -------------------------------------------------------------------
+--      5.1. FUNCIÓN ESCALAR
+-- -------------------------------------------------------------------
+-- -------------------------------------------------------------------
+--          5.1.1. SALDO POR PAGAR
+-- -------------------------------------------------------------------
+/*Calcular el importe pendiente de pago de un presupuesto.*/
+
+
+
+
+
+-- -------------------------------------------------------------------
+--          5.1.2. DÍAS HASTA UNA ACTIVIDAD
+-- -------------------------------------------------------------------
+/*Calcular los días que faltan hasta la fecha de inicio de una actividad.*/ 
+
+
+
+
+-- -------------------------------------------------------------------
+--      5.2. FUNCIÓN DE TABLA
+-- -------------------------------------------------------------------
+-- -------------------------------------------------------------------
+--          5.2.1. SISTEMAS POR PROPIEDAD
+-- -------------------------------------------------------------------
+/*Devolver los sistemas instalados en una propiedad, incluyendo
+proveedor, tipo, fecha de instalación y referencia.*/
+
+
+
+
+
+-- ===================================================================
+--      6. VISTAS
+-- ===================================================================
+
+
+-- -------------------------------------------------------------------
+--      5.1. INVENTARIO TÉCNICO
+-- -------------------------------------------------------------------
+/*Inventario de sistemas instalados en cada propiedad, con sus
+características y proveedores.*/
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      5.2. PLANIFICACIÓN DE ACTIVIDADES
+-- -------------------------------------------------------------------
+/*Actividades planificadas, fechas, estados, propiedades y sistemas
+o servicios asociados.*/
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      5.3. HISTÓRICO DE SERVICIOS
+-- -------------------------------------------------------------------
+/*Servicios registrados por propiedad, espacio, proveedor y
+tipo de servicio.*/
+
+
+
+
+
+
+
+
+-- ===================================================================
+--      6. AGRUPACIÓN Y AGREGACIÓN
+-- ===================================================================
+
+
+-- -------------------------------------------------------------------
+--      6.1. ACTIVIDADES POR ESTADO 
+-- -------------------------------------------------------------------
+/*Número de actividades pendientes, programadas, en curso y
+finalizadas.*/
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      6.2. SISTEMAS POR PROPIEDAD
+-- -------------------------------------------------------------------
+/*Número y clasificación de instalaciones existentes en cada
+propiedad.*/
+
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      6.3. SERVICIOS POR PROVEEDOR
+-- -------------------------------------------------------------------
+/*Contabilizar los servicios asociados a cada proveedor.*/
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      6.4. PRESUPUESTOS POR PROPIEDAD
+-- -------------------------------------------------------------------
+/*Calcular el importe total presupuestado por propiedad (SUM).*/
+
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      6.5. ACTIVIDADES POR TIPO
+-- -------------------------------------------------------------------
+/*Distribución de trabajos de mantenimiento, instalaciones,
+reparaciones, inspecciones, etc.*/
+
+
+
+
+-- ===================================================================
+--      7. CONSULTAS XML
+-- ===================================================================
+
+
+-- -------------------------------------------------------------------
+--      7.1. SERVICIOS - ESPECIFICACIONES
+-- -------------------------------------------------------------------
+/*Consultar horarios, características y condiciones de los servicios.*/
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      7.2. SISTEMAS - DATOS TÉCNICOS
+-- -------------------------------------------------------------------
+/*Consultar marcas, modelos y características técnicas de los
+sistemas instalados.*/
+
+
+
+
+
+
+
+-- ===================================================================
+--      8. USUARIOS Y ROLES
+-- ===================================================================
+
+-- -------------------------------------------------------------------
+--      8.1. ADMINISTRADOR
+-- -------------------------------------------------------------------
+/*Control completo de la base de datos.*/
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      8.2. GESTOR
+-- -------------------------------------------------------------------
+/*Consultar y gestionar clientes, propiedades, proveedores, servicios
+y presupuestos.*/
+
+
+
+
+
+
+
+-- -------------------------------------------------------------------
+--      8.3. TÉCNICO
+-- -------------------------------------------------------------------
+/*Consultar propiedades, sistemas y servicios, y gestionar
+actividades de planificación.*/
