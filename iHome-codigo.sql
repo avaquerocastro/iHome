@@ -588,7 +588,7 @@ GO
 
 
 -- -------------------------------------------------------------------
---      2.12. TIPOS_SISTEMAS **
+--      2.12. TIPOS_SISTEMAS
 -- -------------------------------------------------------------------
 
 CREATE TABLE Tipos_Sistemas
@@ -597,7 +597,7 @@ CREATE TABLE Tipos_Sistemas
         CONSTRAINT PK_Tipos_Sistemas PRIMARY KEY,
     COD_CatSistema INT NOT NULL
         CONSTRAINT FK_Tipos_Sistemas_Categorias FOREIGN KEY
-        REFERENCES CATEGORIAS_SISTEMAS,
+        REFERENCES Categorias_Sistemas,
     TipoSistema NVARCHAR(100) NOT NULL
         CONSTRAINT UQ_Tipos_Sistemas_TipoSistema UNIQUE,
     Activo BIT NOT NULL
@@ -606,10 +606,10 @@ CREATE TABLE Tipos_Sistemas
 GO
 
 
-
 -- ALARMA será el único tipo de sistema desactivado
-INSERT INTO TIPOS_SISTEMAS
+INSERT INTO Tipos_Sistemas
 (COD_CatSistema, TipoSistema, Activo)
+
 SELECT
     C.COD_CatSistema,
     V.TipoSistema,
@@ -647,26 +647,30 @@ FROM
         ('CLIMATIZACION_VENTILACION', 'FILTRACION_AIRE')
 ) AS V
 (CatSistema, TipoSistema)
-INNER JOIN CATEGORIAS_SISTEMAS AS C
+INNER JOIN Categorias_Sistemas AS C
     ON C.CatSistema = V.CatSistema;
 GO
 
+SELECT * FROM Tipos_Sistemas;
+GO
+
+
 
 -- Comprobar los registros
-/* SELECT
+SELECT
     TS.COD_TipoSistema,
     CS.CatSistema,
     TS.TipoSistema,
     TS.Activo
-FROM TIPOS_SISTEMAS AS TS
-INNER JOIN CATEGORIAS_SISTEMAS AS CS
+FROM Tipos_Sistemas AS TS
+INNER JOIN Categorias_Sistemas AS CS
     ON TS.COD_CatSistema = CS.COD_CatSistema
 ORDER BY
     CS.CatSistema,
     TS.TipoSistema;
-GO */
+GO
 
-select * from TIPOS_SISTEMAS
+
 
 
 -- -------------------------------------------------------------------
@@ -699,26 +703,25 @@ GO
 
 -- trigger para generar la referencia de propiedad automáticamente al insertar un nuevo registro 
 -- puede insertar varias propiedades a la vez
-CREATE TRIGGER TRG_Propiedades_RefPropiedad
+CREATE OR ALTER TRIGGER TRG_Propiedades_RefPropiedad
 ON Propiedades
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
 
-    UPDATE P
+    UPDATE Propiedades
     SET RefPropiedad = CONCAT(
-        'C', I.COD_Cliente,
-        '-', TP.PrefijoPropiedad,
-        '-', I.COD_Propiedad
-    )
-    FROM Propiedades AS P
-    INNER JOIN INSERTED AS I
-        ON P.COD_Propiedad = I.COD_Propiedad
-    INNER JOIN Tipos_Propiedades AS TP
-        ON I.COD_TipoPropiedad = TP.COD_TipoPropiedad;
+        'C', INSERTED.COD_Cliente,
+        '-', Tipos_Propiedades.PrefijoPropiedad,
+        '-', INSERTED.COD_Propiedad)
+    FROM Propiedades
+    INNER JOIN INSERTED
+        ON Propiedades.COD_Propiedad = INSERTED.COD_Propiedad
+    INNER JOIN Tipos_Propiedades
+        ON INSERTED.COD_TipoPropiedad = Tipos_Propiedades.COD_TipoPropiedad
 END;
 GO
+
 
 INSERT INTO Propiedades
 (
@@ -737,7 +740,13 @@ VALUES
 GO
 
 
-/* SELECT
+
+SELECT * FROM PROPIEDADES;
+GO
+
+-- verificar datos insertados
+
+SELECT
     P.COD_Propiedad,
     P.RefPropiedad,
     C.ContactoNombre,
@@ -753,9 +762,8 @@ INNER JOIN CLIENTES AS C
 INNER JOIN TIPOS_PROPIEDADES AS TP
     ON P.COD_TipoPropiedad = TP.COD_TipoPropiedad
 ORDER BY P.COD_Propiedad;
-GO */
+GO
 
-select * from PROPIEDADES
 
 
 
@@ -795,19 +803,19 @@ ON Espacios
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
 
-    UPDATE E
+    UPDATE Espacios
     SET RefEspacio = CONCAT(
-        'P', I.COD_Propiedad,
-        '-', TE.TipoEspacio,
-        '-', I.COD_Espacio
+        'P', INSERTED.COD_Propiedad,
+        '-', Tipos_Espacios.TipoEspacio,
+        '-', INSERTED.COD_Espacio
     )
-    FROM Espacios AS E
-    INNER JOIN INSERTED AS I
-        ON E.COD_Espacio = I.COD_Espacio
-    INNER JOIN TIPOS_ESPACIOS AS TE
-        ON I.COD_TipoEspacio = TE.COD_TipoEspacio;
+    FROM Espacios
+    INNER JOIN INSERTED
+        ON Espacios.COD_Espacio = INSERTED.COD_Espacio
+    INNER JOIN Tipos_Espacios
+        ON INSERTED.COD_TipoEspacio = Tipos_Espacios.COD_TipoEspacio;
+
 END;
 GO
 
@@ -823,6 +831,13 @@ VALUES
     (1, 4, 6.00, 15.00), (1, 5, 16.00, 40.00), (3, 11, 14.00, 35.00),
     (3, 5, 12.00, 30.00), (3, 4, 5.00, 12.50), (3, 6, 20.00, 50.00);
 GO
+
+
+
+SELECT * FROM ESPACIOS;
+GO
+
+
 
 -- consulta de comprobación de los registros insertados
 SELECT
@@ -846,7 +861,6 @@ ORDER BY
     E.COD_Espacio;
 GO
 
-select * from ESPACIOS
 
 
 
@@ -882,52 +896,45 @@ ON Documentos
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE D
+    
+    UPDATE Documentos
     SET RefDoc = CONCAT(
-        'P', I.COD_Propiedad,
-        '-', TD.TipoDoc,
-        '-', I.COD_Doc
-    )
-    FROM Documentos AS D
-    INNER JOIN INSERTED AS I
-        ON D.COD_Doc = I.COD_Doc
-    INNER JOIN Tipos_Documentos AS TD
-        ON I.COD_TipoDoc = TD.COD_TipoDoc;
+        'P', INSERTED.COD_Propiedad,
+        '-', Tipos_Documentos.TipoDoc,
+        '-', INSERTED.COD_Doc)
+    FROM Documentos
+    INNER JOIN INSERTED
+        ON Documentos.COD_Doc = INSERTED.COD_Doc
+    INNER JOIN Tipos_Documentos
+        ON INSERTED.COD_TipoDoc = Tipos_Documentos.COD_TipoDoc;
+
 END;
 GO
 
 
 INSERT INTO Documentos
-(
-    COD_Propiedad,
-    COD_TipoDoc,
-    URL_Doc
-)
+(COD_Propiedad, COD_TipoDoc, URL_Doc)
 SELECT
     V.COD_Propiedad,
     TD.COD_TipoDoc,
     V.URL_Doc
 FROM
-(
-    VALUES
-    (
-        1,
-        N'CARPETA',
-        N'https://drive.google.com/drive/folders/1la8GaonwtKXaj-9YakJkK_3XddA6WER4?usp=sharing'
-    ),
-    (
-        1,
-        N'FICHA_TECNICA',
-        N'https://drive.google.com/file/d/1stBMSeuwY69RS7OyLim7mubKe4k32e0u/view?usp=sharing'
-    )
-) AS V (COD_Propiedad, TipoDoc, URL_Doc)
+    (VALUES
+    (1, 'CARPETA',
+    'https://drive.google.com/drive/folders/1la8GaonwtKXaj-9YakJkK_3XddA6WER4?usp=sharing'),
+    (1, 'FICHA_TECNICA',
+    'https://drive.google.com/file/d/1stBMSeuwY69RS7OyLim7mubKe4k32e0u/view?usp=sharing')
+    ) AS V (COD_Propiedad, TipoDoc, URL_Doc)
 INNER JOIN Tipos_Documentos AS TD
     ON TD.TipoDoc = V.TipoDoc;
 GO
 
-/*
+
+SELECT * FROM Documentos;
+GO
+
+
+
 -- comprobar los registros insertados
 SELECT
     D.COD_Doc,
@@ -942,17 +949,16 @@ INNER JOIN PROPIEDADES AS P
 INNER JOIN TIPOS_DOCUMENTOS AS TD
     ON D.COD_TipoDoc = TD.COD_TipoDoc
 ORDER BY D.COD_Doc;
-GO */
-
-SELECT * FROM Documentos;
 GO
+
+
 
 -- -------------------------------------------------------------------
 --      2.16. SERVICIOS
 -- -------------------------------------------------------------------
 
 
--- restricción de la tabla Espacios para que la clave foránea compuesta de la tabla Servicios funcione correctamente
+-- restricción de la tabla Espacios para que la clave foránea compuesta funcione correctamente
 ALTER TABLE Espacios
 ADD CONSTRAINT UQ_Espacios_COD_Espacio_Propiedad
 UNIQUE (COD_Espacio, COD_Propiedad);
@@ -966,23 +972,27 @@ CREATE TABLE Servicios
     COD_Propiedad INT NOT NULL
         CONSTRAINT FK_Servicios_Propiedades FOREIGN KEY
         REFERENCES Propiedades,
-    COD_Espacio INT NULL
-        CONSTRAINT FK_Servicios_Espacios
-        FOREIGN KEY (COD_Espacio, COD_Propiedad)
-        REFERENCES Espacios (COD_Espacio, COD_Propiedad),
+    COD_Espacio INT NULL,
+        
     COD_Proveedor INT NOT NULL
         CONSTRAINT FK_Servicios_Proveedores FOREIGN KEY
         REFERENCES Proveedores,
     COD_TipoServicio INT NOT NULL
         CONSTRAINT FK_Servicios_Tipos FOREIGN KEY
         REFERENCES Tipos_Servicios,
-    RefServicio NVARCHAR(30) NULL,
+    RefServicio NVARCHAR(50) NULL,
     Especificaciones XML NULL,
     COD_Doc INT NULL
         CONSTRAINT FK_Servicios_Documentos FOREIGN KEY
-        REFERENCES Documentos
+        REFERENCES Documentos,
+
+    CONSTRAINT FK_Servicios_Espacios
+        FOREIGN KEY (COD_Espacio, COD_Propiedad)
+        REFERENCES Espacios (COD_Espacio, COD_Propiedad),
 );
 GO
+
+
 
 -- Referencia única cuando contiene un valor
 CREATE UNIQUE INDEX UX_Servicios_RefServicio
@@ -996,29 +1006,21 @@ ON Servicios
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
 
-    UPDATE S
+    UPDATE Servicios
     SET RefServicio = CONCAT(
-        'PR', I.COD_Proveedor,
-        '-TS', I.COD_TipoServicio,
-        '-S', I.COD_Servicio
+        'PR', INSERTED.COD_Proveedor,
+        '-TS', INSERTED.COD_TipoServicio,
+        '-S', INSERTED.COD_Servicio
     )
-    FROM Servicios AS S
-    INNER JOIN INSERTED AS I
-        ON S.COD_Servicio = I.COD_Servicio;
+    FROM Servicios
+    INNER JOIN INSERTED
+        ON Servicios.COD_Servicio = INSERTED.COD_Servicio;
+
 END;
 GO
 
-/* drop table Servicios
 
-DROP TRIGGER IF EXISTS TRG_Servicios_RefServicio;
-GO
-
-SELECT *
-FROM sys.triggers
-WHERE name = 'TRG_Servicios_RefServicio';
-GO */
 
 INSERT INTO Servicios
 (
@@ -1034,7 +1036,7 @@ SELECT
     NULL,
     P.COD_Proveedor,
     TS.COD_TipoServicio,
-    CAST(N'
+    CAST('
     <Detalles>
         <Horario>Mañanas de 9:00h a 13:00h. Tardes de 16:00h a 19:00h</Horario>
         <Caracteristicas>Saco 1m3 37 euros IVA incluido</Caracteristicas>
@@ -1042,9 +1044,11 @@ SELECT
     NULL
 FROM Proveedores AS P
 CROSS JOIN Tipos_Servicios AS TS
-WHERE P.Empresa = N'Los Gemelos'
-  AND TS.TipoServicio = N'SUMINISTRO_MATERIALES';
+WHERE P.Empresa = 'Los Gemelos'
+  AND TS.TipoServicio = 'GESTION_RESIDUOS';
 GO
+
+
 
 INSERT INTO Servicios
     (COD_Propiedad,
@@ -1083,6 +1087,13 @@ WHERE P.Empresa = N'Saltoki'
   AND TS.TipoServicio = N'FILTROS';
 GO
 
+
+
+SELECT * FROM Servicios;
+GO
+
+
+
 -- comprobar los registros insertados
 SELECT
     S.COD_Servicio,
@@ -1107,8 +1118,7 @@ ORDER BY S.COD_Servicio;
 GO
 
 
-SELECT * FROM Servicios;
-GO
+
 
 
 -- -------------------------------------------------------------------
