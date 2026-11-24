@@ -16,3 +16,12 @@ DROP TABLE Clientes_Historico;
 GO
 
 
+-- Para eliminar triggers
+DROP TRIGGER IF EXISTS TRG_Servicios_RefServicio;
+GO
+
+    -- comprobar que ha sido eliminado
+SELECT *
+FROM sys.triggers
+WHERE name = 'TRG_Servicios_RefServicio';
+GO
