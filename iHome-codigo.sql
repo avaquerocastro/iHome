@@ -741,7 +741,7 @@ GO
 
 
 
-SELECT * FROM PROPIEDADES;
+SELECT * FROM Propiedades;
 GO
 
 -- verificar datos insertados
@@ -756,10 +756,10 @@ SELECT
     P.CodigoPostal,
     P.Ciudad,
     P.Provincia
-FROM PROPIEDADES AS P
-INNER JOIN CLIENTES AS C
+FROM Propiedades AS P
+INNER JOIN Clientes AS C
     ON P.COD_Cliente = C.COD_Cliente
-INNER JOIN TIPOS_PROPIEDADES AS TP
+INNER JOIN Tipos_Propiedades AS TP
     ON P.COD_TipoPropiedad = TP.COD_TipoPropiedad
 ORDER BY P.COD_Propiedad;
 GO
@@ -777,7 +777,7 @@ CREATE TABLE Espacios
         CONSTRAINT PK_Espacios PRIMARY KEY,
     COD_Propiedad INT NOT NULL
         CONSTRAINT FK_Espacios_PROPIEDADES FOREIGN KEY
-        REFERENCES PROPIEDADES,
+        REFERENCES Propiedades,
     COD_TipoEspacio INT NOT NULL
         CONSTRAINT FK_Espacios_TIPOS FOREIGN KEY
         REFERENCES TIPOS_ESPACIOS,
@@ -819,7 +819,7 @@ BEGIN
 END;
 GO
 
-INSERT INTO ESPACIOS
+INSERT INTO Espacios
 (
     COD_Propiedad,
     COD_TipoEspacio,
@@ -834,7 +834,7 @@ GO
 
 
 
-SELECT * FROM ESPACIOS;
+SELECT * FROM Espacios;
 GO
 
 
@@ -943,10 +943,10 @@ SELECT
     P.RefPropiedad,
     TD.TipoDoc,
     D.URL_Doc
-FROM DOCUMENTOS AS D
-INNER JOIN PROPIEDADES AS P
+FROM Documentos AS D
+INNER JOIN Propiedades AS P
     ON D.COD_Propiedad = P.COD_Propiedad
-INNER JOIN TIPOS_DOCUMENTOS AS TD
+INNER JOIN Tipos_Documentos AS TD
     ON D.COD_TipoDoc = TD.COD_TipoDoc
 ORDER BY D.COD_Doc;
 GO
