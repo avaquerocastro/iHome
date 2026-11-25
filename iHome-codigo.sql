@@ -1032,10 +1032,7 @@ INSERT INTO Servicios
     COD_Doc
 )
 SELECT
-    1,
-    NULL,
-    P.COD_Proveedor,
-    TS.COD_TipoServicio,
+    1, NULL, P.COD_Proveedor, TS.COD_TipoServicio,
     CAST('
     <Detalles>
         <Horario>Mañanas de 9:00h a 13:00h. Tardes de 16:00h a 19:00h</Horario>
@@ -1048,8 +1045,6 @@ WHERE P.Empresa = 'Los Gemelos'
   AND TS.TipoServicio = 'GESTION_RESIDUOS';
 GO
 
-
-
 INSERT INTO Servicios
     (COD_Propiedad,
     COD_Espacio,
@@ -1058,10 +1053,7 @@ INSERT INTO Servicios
     Especificaciones,
     COD_Doc)
 SELECT
-    1,
-    E.COD_Espacio,
-    P.COD_Proveedor,
-    TS.COD_TipoServicio,
+    1, E.COD_Espacio, P.COD_Proveedor, TS.COD_TipoServicio,
     CAST(N'
     <Detalles>
         <Caracteristicas>
@@ -1080,11 +1072,11 @@ CROSS APPLY
     INNER JOIN Tipos_Espacios AS TE
         ON E1.COD_TipoEspacio = TE.COD_TipoEspacio
     WHERE E1.COD_Propiedad = 1
-      AND TE.TipoEspacio = N'COCINA'
+      AND TE.TipoEspacio = 'COCINA'
     ORDER BY E1.COD_Espacio
 ) AS E
-WHERE P.Empresa = N'Saltoki'
-  AND TS.TipoServicio = N'FILTROS';
+WHERE P.Empresa = 'Saltoki'
+  AND TS.TipoServicio = 'FILTROS';
 GO
 
 
@@ -1125,72 +1117,62 @@ GO
 --      2.17. SISTEMAS
 -- -------------------------------------------------------------------
 
-CREATE TABLE SISTEMAS
+CREATE TABLE Sistemas
 (
     COD_Sistema INT IDENTITY(1,1)
-        CONSTRAINT PK_SISTEMAS PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
+        CONSTRAINT PK_Sistemas PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT FK_Sistemas_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
     COD_Espacio INT NULL,
-    COD_Proveedor INT NOT NULL,
-    COD_TipoSistema INT NOT NULL,
 
+    COD_Proveedor INT NOT NULL
+        CONSTRAINT FK_Sistemas_Proveedores FOREIGN KEY
+        REFERENCES Proveedores,
+    COD_TipoSistema INT NOT NULL
+        CONSTRAINT FK_Sistemas_Tipos FOREIGN KEY
+        REFERENCES Tipos_Sistemas,
     RefSistema NVARCHAR(50) NULL,
     DatosTecnicos XML NULL,
     FechaInstalacion DATETIME2 NOT NULL,
-    COD_Doc INT NULL,
+    COD_Doc INT NULL
+        CONSTRAINT FK_Sistemas_Documentos FOREIGN KEY
+        REFERENCES Documentos,
 
-    CONSTRAINT FK_SISTEMAS_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_SISTEMAS_ESPACIOS
+    CONSTRAINT FK_Sistemas_Espacios
         FOREIGN KEY (COD_Espacio, COD_Propiedad)
-        REFERENCES ESPACIOS (COD_Espacio, COD_Propiedad),
-
-    CONSTRAINT FK_SISTEMAS_PROVEEDORES
-        FOREIGN KEY (COD_Proveedor)
-        REFERENCES PROVEEDORES (COD_Proveedor),
-
-    CONSTRAINT FK_SISTEMAS_TIPOS
-        FOREIGN KEY (COD_TipoSistema)
-        REFERENCES TIPOS_SISTEMAS (COD_TipoSistema),
-
-    CONSTRAINT FK_SISTEMAS_DOCUMENTOS
-        FOREIGN KEY (COD_Doc)
-        REFERENCES DOCUMENTOS (COD_Doc)
+        REFERENCES Espacios (COD_Espacio, COD_Propiedad)   
 );
 GO
 
 
-CREATE UNIQUE INDEX UX_SISTEMAS_RefSistema
-ON SISTEMAS (RefSistema)
+CREATE UNIQUE INDEX UX_Sistemas_RefSistema
+ON Sistemas (RefSistema)
 WHERE RefSistema IS NOT NULL;
 GO
 
 
-/* 
-CREATE TRIGGER TRG_SISTEMAS_RefSistema
-ON SISTEMAS
+ 
+CREATE TRIGGER TRG_Sistemas_RefSistema
+ON Sistemas
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE S
+    
+    UPDATE Sistemas
     SET RefSistema = CONCAT(
-        'PR', I.COD_Proveedor,
-        '-TS', I.COD_TipoSistema,
-        '-S', I.COD_Sistema
+        'PR', INSERTED.COD_Proveedor,
+        '-TS', INSERTED.COD_TipoSistema,
+        '-S', INSERTED.COD_Sistema
     )
-    FROM SISTEMAS AS S
-    INNER JOIN INSERTED AS I
-        ON S.COD_Sistema = I.COD_Sistema;
+    FROM Sistemas
+     INNER JOIN INSERTED
+        ON Sistemas.COD_Sistema = INSERTED.COD_Sistema;
 END;
 GO
 
 
-INSERT INTO SISTEMAS
+INSERT INTO Sistemas
 (
     COD_Propiedad,
     COD_Espacio,
@@ -1201,11 +1183,8 @@ INSERT INTO SISTEMAS
     COD_Doc
 )
 SELECT
-    1,
-    NULL,
-    P.COD_Proveedor,
-    TS.COD_TipoSistema,
-    CAST(N'
+    1, NULL, Proveedores.COD_Proveedor, Tipos_Sistemas.COD_TipoSistema,
+    CAST('
     <Sistema>
         <Marca>SIBER</Marca>
         <Modelo>DF EVO 2</Modelo>
@@ -1216,162 +1195,130 @@ SELECT
             <ClaseFiltro>Coarse 65% (G4)</ClaseFiltro>
         </Caracteristicas>
     </Sistema>' AS XML),
-    '2025-11-01',
-    1
-FROM PROVEEDORES AS P
-CROSS JOIN TIPOS_SISTEMAS AS TS
-WHERE P.Empresa = N'Saltoki'
-  AND TS.TipoSistema = N'RECUPERADOR_CALOR';
+    '2025-11-01', 1
+FROM Proveedores
+CROSS JOIN Tipos_Sistemas
+WHERE Proveedores.Empresa = 'Saltoki'
+  AND Tipos_Sistemas.TipoSistema = 'RECUPERADOR_CALOR';
 GO
 
-SELECT *
-FROM SISTEMAS;
-GO */
+
+SELECT * FROM Sistemas;
+GO
 
 
-/*Consulta para recuperar la marca:
+-- Consulta para recuperar la marca de un sistema
 SELECT
-    COD_Sistema,
-    NombreSistema,
+    COD_Sistema, RefSistema,
     DatosTecnicos.value(
         '(/Sistema/Marca/text())[1]',
         'NVARCHAR(100)'
     )
-AS Marca
-FROM Sistemas_Servicios;
-GO*/
+AS Marca FROM Sistemas;
+GO
 
 -- -------------------------------------------------------------------
 --      2.18. PRESUPUESTOS
 -- -------------------------------------------------------------------
 
-/* CREATE TABLE PRESUPUESTOS
+CREATE TABLE Presupuestos
 (
     COD_Presupuesto INT IDENTITY(1,1)
-        CONSTRAINT PK_PRESUPUESTOS PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
-    COD_Doc INT NOT NULL,
-    COD_Sistema INT NULL,
-    COD_Servicio INT NULL,
-    COD_EstadoPresu INT NOT NULL,
-
+        CONSTRAINT Pk_Presupuestos PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT Fk_Presupuestos_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
+    COD_Doc INT NOT NULL
+        CONSTRAINT Fk_Presupuestos_Documentos FOREIGN KEY
+        REFERENCES Documentos,
+    COD_Sistema INT NULL
+        CONSTRAINT Fk_Presupuestos_Sistemas FOREIGN KEY
+        REFERENCES Sistemas,
+    COD_Servicio INT NULL
+        CONSTRAINT Fk_Presupuestos_Servicios FOREIGN KEY
+        REFERENCES Servicios,
+    COD_EstadoPresu INT NOT NULL
+        CONSTRAINT Fk_Presupuestos_Estados FOREIGN KEY
+        REFERENCES Estados_Presupuestos,
     RefPresu NVARCHAR(50) NULL,
-
     FechaInicio DATETIME2 NOT NULL,
     FechaFin DATETIME2 NOT NULL,
-
-    Importe DECIMAL(14,2) NOT NULL,
-    Anticipo DECIMAL(14,2) NULL,
-    PagoParcial DECIMAL(14,2) NULL,
-
-    -- Importe total pagado
+    Importe DECIMAL(14,2) NOT NULL
+        CONSTRAINT Ck_Presupuestos_Importe
+        CHECK (Importe >= 0),
+    Anticipo DECIMAL(14,2) NULL
+        CONSTRAINT Ck_Presupuestos_Anticipo
+        CHECK (Anticipo IS NULL OR Anticipo >= 0),
+    PagoParcial DECIMAL(14,2) NULL
+        CONSTRAINT Ck_Presupuestos_PagoParcial
+        CHECK (PagoParcial IS NULL OR PagoParcial >= 0),
     PagoTotal AS
-    (
-        ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0)
-    ) PERSISTED,
-
-    -- Importe pendiente de pago
+    (ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0)) PERSISTED,
     Saldo AS
-    (
-        Importe - (ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0))
-    ) PERSISTED,
-
-    -- Indica si el presupuesto está completamente pagado
+    (Importe - (ISNULL(Anticipo, 0) + ISNULL(PagoParcial, 0))) PERSISTED,
     Pagado AS
-    (
-        CASE
+        (CASE
             WHEN Importe =
                 ISNULL(Anticipo, 0) +
                 ISNULL(PagoParcial, 0)
             THEN 1
             ELSE 0
-        END
-    ) PERSISTED,
-
+        END) PERSISTED,
     URL_Compra NVARCHAR(4000) NULL,
     Comentarios NVARCHAR(MAX) NULL,
-
-    RegistroInicial DATETIME2 NOT NULL
-        CONSTRAINT DF_PRESUPUESTOS_RegistroInicial
-        DEFAULT SYSDATETIME(),
-
-    RegistroFinal DATETIME2 NOT NULL
-        CONSTRAINT DF_PRESUPUESTOS_RegistroFinal
-        DEFAULT SYSDATETIME(),
-
-    -- Claves foráneas
-    CONSTRAINT FK_PRESUPUESTOS_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_PRESUPUESTOS_DOCUMENTOS
-        FOREIGN KEY (COD_Doc)
-        REFERENCES DOCUMENTOS (COD_Doc),
-
-    CONSTRAINT FK_PRESUPUESTOS_SISTEMAS
-        FOREIGN KEY (COD_Sistema)
-        REFERENCES SISTEMAS (COD_Sistema),
-
-    CONSTRAINT FK_PRESUPUESTOS_SERVICIOS
-        FOREIGN KEY (COD_Servicio)
-        REFERENCES SERVICIOS (COD_Servicio),
-
-    CONSTRAINT FK_PRESUPUESTOS_ESTADOS
-        FOREIGN KEY (COD_EstadoPresu)
-        REFERENCES ESTADOS_PRESUPUESTOS (COD_EstadoPresu),
-
-    -- Restricciones CHECK
-    CONSTRAINT CK_PRESUPUESTOS_Fechas
+    RegistroInicial DATETIME2
+        GENERATED ALWAYS AS ROW START NOT NULL,
+	RegistroFinal DATETIME2
+		GENERATED ALWAYS AS ROW END NOT NULL,
+    
+    CONSTRAINT Ck_Presupuestos_Fechas
         CHECK (FechaFin >= FechaInicio),
 
-    CONSTRAINT CK_PRESUPUESTOS_Importe
-        CHECK (Importe >= 0),
-
-    CONSTRAINT CK_PRESUPUESTOS_Anticipo
-        CHECK (Anticipo IS NULL OR Anticipo >= 0),
-
-    CONSTRAINT CK_PRESUPUESTOS_PagoParcial
-        CHECK (PagoParcial IS NULL OR PagoParcial >= 0),
-
-    CONSTRAINT CK_PRESUPUESTOS_Pagos
+    CONSTRAINT Ck_Presupuestos_Pagos
         CHECK
-        (
-            ISNULL(Anticipo, 0) +
-            ISNULL(PagoParcial, 0) <= Importe
-        )
-);
+            (ISNULL(Anticipo, 0) +
+            ISNULL(PagoParcial, 0) <= Importe),
+
+    PERIOD FOR SYSTEM_TIME
+		(RegistroInicial, RegistroFinal)
+)
+WITH
+    (SYSTEM_VERSIONING = ON
+        (HISTORY_TABLE = dbo.Presupuestos_Historico)
+    );
 GO
 
-CREATE UNIQUE INDEX UX_PRESUPUESTOS_RefPresu
-ON PRESUPUESTOS (RefPresu)
+
+
+CREATE UNIQUE INDEX UX_Presupuestos_RefPresu
+ON Presupuestos (RefPresu)
 WHERE RefPresu IS NOT NULL;
 GO
 
 
-CREATE TRIGGER TRG_PRESUPUESTOS_RefPresu
-ON PRESUPUESTOS
+CREATE TRIGGER TRG_Presupuestos_RefPresu
+ON Presupuestos
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
 
-    UPDATE P
+    UPDATE Presupuestos
     SET RefPresu = CONCAT(
-        PR.RefPropiedad,
+        Propiedades.RefPropiedad,
         '-PR',
-        I.COD_Presupuesto
+        INSERTED.COD_Presupuesto
     )
-    FROM PRESUPUESTOS AS P
-    INNER JOIN INSERTED AS I
-        ON P.COD_Presupuesto = I.COD_Presupuesto
-    INNER JOIN PROPIEDADES AS PR
-        ON I.COD_Propiedad = PR.COD_Propiedad;
+    FROM Presupuestos
+    INNER JOIN INSERTED
+        ON Presupuestos.COD_Presupuesto = INSERTED.COD_Presupuesto
+    INNER JOIN Propiedades
+        ON INSERTED.COD_Propiedad = Propiedades.COD_Propiedad;
 END;
 GO
 
 
-INSERT INTO PRESUPUESTOS
+
+INSERT INTO Presupuestos
 (
     COD_Propiedad,
     COD_Doc,
@@ -1387,26 +1334,16 @@ INSERT INTO PRESUPUESTOS
     Comentarios
 )
 SELECT
-    1,
-    2,
-    1,
-    2,
-    EP.COD_EstadoPresu,
-    '2026-11-01',
-    '2026-11-15',
-    61.96,
-    0,
-    61.96,
-    NULL,
-    N'solo entrega en tienda'
-FROM ESTADOS_PRESUPUESTOS AS EP
-WHERE EP.EstadoPresu = N'ACEPTADO';
-GO */
+    1, 2, 1, 2, Estados_Presupuestos.COD_EstadoPresu, '2026-11-01',
+    '2026-11-15', 61.96, 0, 61.96, NULL, 'solo entrega en tienda'
+FROM Estados_Presupuestos
+WHERE Estados_Presupuestos.EstadoPresu = 'ACEPTADO';
+GO
 
 
 
-select * from PRESUPUESTOS
-
+SELECT * FROM Presupuestos;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -1414,146 +1351,125 @@ select * from PRESUPUESTOS
 -- -------------------------------------------------------------------
 
 
-/* -- clave foraneas compuestas para la tabla PLANIFICACION
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.key_constraints
-    WHERE name = 'UQ_SISTEMAS_COD_Sistema_Propiedad'
-)
+-- restricción de la tabla Sistemas para que la clave foránea compuesta en Planificacion funcione correctamente
+IF NOT EXISTS
+(SELECT 1 FROM sys.key_constraints
+    WHERE name = 'Uq_Sistemas_COD_Sistema_Propiedad')
 BEGIN
-    ALTER TABLE SISTEMAS
-    ADD CONSTRAINT UQ_SISTEMAS_COD_Sistema_Propiedad
+    ALTER TABLE Sistemas
+    ADD CONSTRAINT Uq_Sistemas_COD_Sistema_Propiedad
     UNIQUE (COD_Sistema, COD_Propiedad);
 END;
 GO
 
-IF NOT EXISTS (
-    SELECT 1
-    FROM sys.key_constraints
-    WHERE name = 'UQ_SERVICIOS_COD_Servicio_Propiedad'
-)
+-- restricción de la tabla Servicios para que la clave foránea compuesta en Planificacion funcione correctamente
+IF NOT EXISTS
+(SELECT 1 FROM sys.key_constraints
+    WHERE name = 'Uq_Servicios_COD_Servicio_Propiedad')
 BEGIN
-    ALTER TABLE SERVICIOS
-    ADD CONSTRAINT UQ_SERVICIOS_COD_Servicio_Propiedad
+    ALTER TABLE Servicios
+    ADD CONSTRAINT Uq_Servicios_COD_Servicio_Propiedad
     UNIQUE (COD_Servicio, COD_Propiedad);
 END;
 GO
 
 
-CREATE TABLE PLANIFICACION
+CREATE TABLE Planificacion
 (
     COD_Actividad INT IDENTITY(1,1)
-        CONSTRAINT PK_PLANIFICACION PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
-    COD_TipoActividad INT NOT NULL,
+        CONSTRAINT Pk_Planificacion PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT Fk_Planificacion_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
+    COD_TipoActividad INT NOT NULL
+        CONSTRAINT Fk_Planificacion_Tipos FOREIGN KEY
+        REFERENCES Tipos_Actividades,
     COD_Sistema INT NULL,
+
     COD_Servicio INT NULL,
 
     RefActividad NVARCHAR(50) NULL,
-
-    COD_EstadoPlan INT NOT NULL,
-
+    COD_EstadoPlan INT NOT NULL
+        CONSTRAINT Fk_Planificacion_Estados FOREIGN KEY
+        REFERENCES Estados_Planificacion,
     FechaInicio DATETIME2 NULL,
     FechaFin DATETIME2 NULL,
-
     Comentarios NVARCHAR(MAX) NULL,
     FechaRecordatorio DATETIME2 NULL,
-    COD_Doc INT NULL,
+    COD_Doc INT NULL
+        CONSTRAINT Fk_Planificacion_Documentos FOREIGN KEY
+        REFERENCES Documentos,
+	RegistroInicial DATETIME2
+        GENERATED ALWAYS AS ROW START NOT NULL,
+	RegistroFinal DATETIME2
+		GENERATED ALWAYS AS ROW END NOT NULL,
 
-    RegistroInicial DATETIME2 NOT NULL
-        CONSTRAINT DF_PLANIFICACION_RegistroInicial
-        DEFAULT SYSDATETIME(),
-
-    RegistroFinal DATETIME2 NOT NULL
-        CONSTRAINT DF_PLANIFICACION_RegistroFinal
-        DEFAULT SYSDATETIME(),
-
-    -- Claves foráneas
-    CONSTRAINT FK_PLANIFICACION_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_PLANIFICACION_TIPOS
-        FOREIGN KEY (COD_TipoActividad)
-        REFERENCES TIPOS_ACTIVIDADES (COD_TipoActividad),
-
-    CONSTRAINT FK_PLANIFICACION_SISTEMAS
-        FOREIGN KEY (COD_Sistema, COD_Propiedad)
-        REFERENCES SISTEMAS (COD_Sistema, COD_Propiedad),
-
-    CONSTRAINT FK_PLANIFICACION_SERVICIOS
+    CONSTRAINT Fk_Planificacion_Servicios
         FOREIGN KEY (COD_Servicio, COD_Propiedad)
-        REFERENCES SERVICIOS (COD_Servicio, COD_Propiedad),
+        REFERENCES Servicios (COD_Servicio, COD_Propiedad),
 
-    CONSTRAINT FK_PLANIFICACION_ESTADOS
-        FOREIGN KEY (COD_EstadoPlan)
-        REFERENCES ESTADOS_PLANIFICACION (COD_EstadoPlan),
-
-    CONSTRAINT FK_PLANIFICACION_DOCUMENTOS
-        FOREIGN KEY (COD_Doc)
-        REFERENCES DOCUMENTOS (COD_Doc),
-
-    -- Restricción de fechas
-    CONSTRAINT CK_PLANIFICACION_Fechas
-        CHECK (
-            FechaInicio IS NULL
+    CONSTRAINT Ck_Planificacion_Fechas
+        CHECK
+        (FechaInicio IS NULL
             OR FechaFin IS NULL
-            OR FechaFin >= FechaInicio
-        )
-);
+            OR FechaFin >= FechaInicio),
+
+    PERIOD FOR SYSTEM_TIME
+		(RegistroInicial, RegistroFinal)
+)
+WITH
+    (SYSTEM_VERSIONING = ON
+        (HISTORY_TABLE = dbo.Planificacion_Historico)
+    );
 GO
 
 
 
-CREATE UNIQUE INDEX UX_PLANIFICACION_RefActividad
-ON PLANIFICACION (RefActividad)
+CREATE UNIQUE INDEX Ux_Planificacion_RefActividad
+ON Planificacion (RefActividad)
 WHERE RefActividad IS NOT NULL;
 GO
 
 
-
-
-CREATE TRIGGER TRG_PLANIFICACION_RefActividad
-ON PLANIFICACION
+CREATE TRIGGER Trg_Planificacion_RefActividad
+ON Planificacion
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE P
+    
+    UPDATE Planificacion
     SET RefActividad = CONCAT(
-        PR.RefPropiedad,
+        Propiedades.RefPropiedad,
 
         CASE
-            WHEN I.COD_Sistema IS NOT NULL
-            THEN CONCAT('-S', I.COD_Sistema)
+            WHEN INSERTED.COD_Sistema IS NOT NULL
+            THEN CONCAT('-S', INSERTED.COD_Sistema)
             ELSE ''
         END,
 
         CASE
-            WHEN I.COD_Servicio IS NOT NULL
-            THEN CONCAT('-SV', I.COD_Servicio)
+            WHEN INSERTED.COD_Servicio IS NOT NULL
+            THEN CONCAT('-SV', INSERTED.COD_Servicio)
             ELSE ''
         END,
 
         '-',
-        TA.TipoActividad,
+        Tipos_Actividades.TipoActividad,
         '-A',
-        I.COD_Actividad
+        INSERTED.COD_Actividad
     )
-    FROM PLANIFICACION AS P
-    INNER JOIN INSERTED AS I
-        ON P.COD_Actividad = I.COD_Actividad
-    INNER JOIN PROPIEDADES AS PR
-        ON I.COD_Propiedad = PR.COD_Propiedad
-    INNER JOIN TIPOS_ACTIVIDADES AS TA
-        ON I.COD_TipoActividad = TA.COD_TipoActividad;
+    FROM Planificacion
+    INNER JOIN INSERTED
+        ON Planificacion.COD_Actividad = INSERTED.COD_Actividad
+    INNER JOIN Propiedades
+        ON INSERTED.COD_Propiedad = Propiedades.COD_Propiedad
+    INNER JOIN Tipos_Actividades
+        ON INSERTED.COD_TipoActividad = Tipos_Actividades.COD_TipoActividad;
 END;
-GO */
+GO
 
-/* 
-INSERT INTO PLANIFICACION
+
+INSERT INTO Planificacion
 (
     COD_Propiedad,
     COD_TipoActividad,
@@ -1567,22 +1483,16 @@ INSERT INTO PLANIFICACION
     COD_Doc
 )
 SELECT
-    1,
-    31,
-    1,
-    2,
-    EP.COD_EstadoPlan,
-    '2026-12-01',
-    '2026-12-01',
-    N'OFERTA REPUESTOS SIBER',
-    '2026-10-01',
-    NULL
-FROM ESTADOS_PLANIFICACION AS EP
-WHERE EP.EstadoPlan = N'PROGRAMADO';
+    1, 31, 1, 2, Estados_Planificacion.COD_EstadoPlan,
+    '2026-12-01', '2026-12-01', 'OFERTA REPUESTOS SIBER',
+    '2026-10-01', NULL
+FROM Estados_Planificacion
+WHERE Estados_Planificacion.EstadoPlan = 'PROGRAMADO';
 GO
 
-select * from PLANIFICACION
- */
+
+SELECT * FROM Planificacion;
+GO
 
 -- ===================================================================
 --      3. PROCEDIMIENTOS ALMACENADOS
@@ -1713,11 +1623,11 @@ DECLARE @TipoRecuperador INT;
 
 SELECT @ProveedorSaltoki = COD_Proveedor
 FROM dbo.Proveedores
-WHERE Empresa = N'Saltoki';
+WHERE Empresa = 'Saltoki';
 
 SELECT @TipoRecuperador = COD_TipoSistema
 FROM dbo.Tipos_Sistemas
-WHERE TipoSistema = N'RECUPERADOR_CALOR'
+WHERE TipoSistema = 'RECUPERADOR_CALOR'
   AND Activo = 1;
 
 IF @ProveedorSaltoki IS NULL OR @TipoRecuperador IS NULL
@@ -1728,7 +1638,7 @@ EXEC dbo.SP_RegistrarSistema
     @COD_Proveedor = @ProveedorSaltoki,
     @COD_TipoSistema = @TipoRecuperador,
     @FechaInstalacion = '2026-11-01',
-    @DatosTecnicos = N'
+    @DatosTecnicos = '
         <Sistema>
             <Marca>SIBER</Marca>
             <Modelo>DF EVO 2</Modelo>
@@ -1743,7 +1653,7 @@ EXEC dbo.SP_RegistrarSistema
     @COD_Sistema = @NuevoSistema OUTPUT;
 
 PRINT CONCAT('Sistema registrado. COD_Sistema: ', @NuevoSistema);
-
+GO
 
 
 
@@ -1866,7 +1776,7 @@ DECLARE @EspacioCocina INT;
 
 SELECT @TipoFiltros = COD_TipoServicio
 FROM dbo.Tipos_Servicios
-WHERE TipoServicio = N'FILTROS'
+WHERE TipoServicio = 'FILTROS'
   AND Activo = 1;
 
 SELECT TOP (1) @EspacioCocina = E.COD_Espacio
@@ -1874,7 +1784,7 @@ FROM dbo.Espacios AS E
 INNER JOIN dbo.Tipos_Espacios AS TE
     ON E.COD_TipoEspacio = TE.COD_TipoEspacio
 WHERE E.COD_Propiedad = 1
-  AND TE.TipoEspacio = N'COCINA'
+  AND TE.TipoEspacio = 'COCINA'
 ORDER BY E.COD_Espacio;
 
 IF @TipoFiltros IS NULL
@@ -1888,7 +1798,7 @@ EXEC dbo.SP_RegistrarServicio
     @COD_Espacio = @EspacioCocina,
     @COD_Proveedor = @ProveedorSaltoki,
     @COD_TipoServicio = @TipoFiltros,
-    @Especificaciones = N'
+    @Especificaciones = '
         <Detalles>
             <Caracteristicas>
                 <Filtro>F7</Filtro>
@@ -1903,7 +1813,7 @@ EXEC dbo.SP_RegistrarServicio
     @COD_Servicio = @NuevoServicio OUTPUT;
 
 PRINT CONCAT('Servicio registrado. COD_Servicio: ', @NuevoServicio);
-
+GO
 
 
 
@@ -2082,7 +1992,7 @@ EXEC dbo.SP_ProgramarActividad
     @COD_Actividad = @NuevaActividad OUTPUT;
 
 PRINT CONCAT('Actividad registrada. COD_Actividad: ', @NuevaActividad);
-
+GO
 
 
 
@@ -2157,8 +2067,8 @@ GO
 -- INSERTAR DATOS DE PRUEBA
 EXEC dbo.SP_ModificarEstadoActividad
     @COD_Actividad = @NuevaActividad,
-    @EstadoPlan = N'EN CURSO';
-
+    @EstadoPlan = 'EN CURSO';
+GO
 
 
 
@@ -2252,9 +2162,10 @@ EXEC dbo.SP_RegistrarDocumento
     @TipoDoc = N'FICHA_TECNICA',
     @URL_Doc = N'https://ejemplo.com/documentacion/recuperador-calor.pdf',
     @COD_Doc = @NuevoDocumento OUTPUT;
+GO
 
 PRINT CONCAT('Documento registrado. COD_Doc: ', @NuevoDocumento);
-
+GO
 
 -- ******** COMPROBACIÓN FINAL
 SELECT
