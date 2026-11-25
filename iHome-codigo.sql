@@ -1032,10 +1032,7 @@ INSERT INTO Servicios
     COD_Doc
 )
 SELECT
-    1,
-    NULL,
-    P.COD_Proveedor,
-    TS.COD_TipoServicio,
+    1, NULL, P.COD_Proveedor, TS.COD_TipoServicio,
     CAST('
     <Detalles>
         <Horario>Mañanas de 9:00h a 13:00h. Tardes de 16:00h a 19:00h</Horario>
@@ -1048,8 +1045,6 @@ WHERE P.Empresa = 'Los Gemelos'
   AND TS.TipoServicio = 'GESTION_RESIDUOS';
 GO
 
-
-
 INSERT INTO Servicios
     (COD_Propiedad,
     COD_Espacio,
@@ -1058,10 +1053,7 @@ INSERT INTO Servicios
     Especificaciones,
     COD_Doc)
 SELECT
-    1,
-    E.COD_Espacio,
-    P.COD_Proveedor,
-    TS.COD_TipoServicio,
+    1, E.COD_Espacio, P.COD_Proveedor, TS.COD_TipoServicio,
     CAST(N'
     <Detalles>
         <Caracteristicas>
@@ -1080,11 +1072,11 @@ CROSS APPLY
     INNER JOIN Tipos_Espacios AS TE
         ON E1.COD_TipoEspacio = TE.COD_TipoEspacio
     WHERE E1.COD_Propiedad = 1
-      AND TE.TipoEspacio = N'COCINA'
+      AND TE.TipoEspacio = 'COCINA'
     ORDER BY E1.COD_Espacio
 ) AS E
-WHERE P.Empresa = N'Saltoki'
-  AND TS.TipoServicio = N'FILTROS';
+WHERE P.Empresa = 'Saltoki'
+  AND TS.TipoServicio = 'FILTROS';
 GO
 
 
@@ -1125,72 +1117,62 @@ GO
 --      2.17. SISTEMAS
 -- -------------------------------------------------------------------
 
-CREATE TABLE SISTEMAS
+CREATE TABLE Sistemas
 (
     COD_Sistema INT IDENTITY(1,1)
-        CONSTRAINT PK_SISTEMAS PRIMARY KEY,
-
-    COD_Propiedad INT NOT NULL,
+        CONSTRAINT PK_Sistemas PRIMARY KEY,
+    COD_Propiedad INT NOT NULL
+        CONSTRAINT FK_Sistemas_Propiedades FOREIGN KEY
+        REFERENCES Propiedades,
     COD_Espacio INT NULL,
-    COD_Proveedor INT NOT NULL,
-    COD_TipoSistema INT NOT NULL,
 
+    COD_Proveedor INT NOT NULL
+        CONSTRAINT FK_Sistemas_Proveedores FOREIGN KEY
+        REFERENCES Proveedores,
+    COD_TipoSistema INT NOT NULL
+        CONSTRAINT FK_Sistemas_Tipos FOREIGN KEY
+        REFERENCES Tipos_Sistemas,
     RefSistema NVARCHAR(50) NULL,
     DatosTecnicos XML NULL,
     FechaInstalacion DATETIME2 NOT NULL,
-    COD_Doc INT NULL,
+    COD_Doc INT NULL
+        CONSTRAINT FK_Sistemas_Documentos FOREIGN KEY
+        REFERENCES Documentos,
 
-    CONSTRAINT FK_SISTEMAS_PROPIEDADES
-        FOREIGN KEY (COD_Propiedad)
-        REFERENCES PROPIEDADES (COD_Propiedad),
-
-    CONSTRAINT FK_SISTEMAS_ESPACIOS
+    CONSTRAINT FK_Sistemas_Espacios
         FOREIGN KEY (COD_Espacio, COD_Propiedad)
-        REFERENCES ESPACIOS (COD_Espacio, COD_Propiedad),
-
-    CONSTRAINT FK_SISTEMAS_PROVEEDORES
-        FOREIGN KEY (COD_Proveedor)
-        REFERENCES PROVEEDORES (COD_Proveedor),
-
-    CONSTRAINT FK_SISTEMAS_TIPOS
-        FOREIGN KEY (COD_TipoSistema)
-        REFERENCES TIPOS_SISTEMAS (COD_TipoSistema),
-
-    CONSTRAINT FK_SISTEMAS_DOCUMENTOS
-        FOREIGN KEY (COD_Doc)
-        REFERENCES DOCUMENTOS (COD_Doc)
+        REFERENCES Espacios (COD_Espacio, COD_Propiedad)   
 );
 GO
 
 
-CREATE UNIQUE INDEX UX_SISTEMAS_RefSistema
-ON SISTEMAS (RefSistema)
+CREATE UNIQUE INDEX UX_Sistemas_RefSistema
+ON Sistemas (RefSistema)
 WHERE RefSistema IS NOT NULL;
 GO
 
 
-/* 
-CREATE TRIGGER TRG_SISTEMAS_RefSistema
-ON SISTEMAS
+ 
+CREATE TRIGGER TRG_Sistemas_RefSistema
+ON Sistemas
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE S
+    
+    UPDATE Sistemas
     SET RefSistema = CONCAT(
-        'PR', I.COD_Proveedor,
-        '-TS', I.COD_TipoSistema,
-        '-S', I.COD_Sistema
+        'PR', INSERTED.COD_Proveedor,
+        '-TS', INSERTED.COD_TipoSistema,
+        '-S', INSERTED.COD_Sistema
     )
-    FROM SISTEMAS AS S
-    INNER JOIN INSERTED AS I
-        ON S.COD_Sistema = I.COD_Sistema;
+    FROM Sistemas
+     INNER JOIN INSERTED
+        ON Sistemas.COD_Sistema = INSERTED.COD_Sistema;
 END;
 GO
 
 
-INSERT INTO SISTEMAS
+INSERT INTO Sistemas
 (
     COD_Propiedad,
     COD_Espacio,
@@ -1201,11 +1183,8 @@ INSERT INTO SISTEMAS
     COD_Doc
 )
 SELECT
-    1,
-    NULL,
-    P.COD_Proveedor,
-    TS.COD_TipoSistema,
-    CAST(N'
+    1, NULL, Proveedores.COD_Proveedor, Tipos_Sistemas.COD_TipoSistema,
+    CAST('
     <Sistema>
         <Marca>SIBER</Marca>
         <Modelo>DF EVO 2</Modelo>
@@ -1216,39 +1195,36 @@ SELECT
             <ClaseFiltro>Coarse 65% (G4)</ClaseFiltro>
         </Caracteristicas>
     </Sistema>' AS XML),
-    '2025-11-01',
-    1
-FROM PROVEEDORES AS P
-CROSS JOIN TIPOS_SISTEMAS AS TS
-WHERE P.Empresa = N'Saltoki'
-  AND TS.TipoSistema = N'RECUPERADOR_CALOR';
+    '2025-11-01', 1
+FROM Proveedores
+CROSS JOIN Tipos_Sistemas
+WHERE Proveedores.Empresa = 'Saltoki'
+  AND Tipos_Sistemas.TipoSistema = 'RECUPERADOR_CALOR';
 GO
 
-SELECT *
-FROM SISTEMAS;
-GO */
+
+SELECT * FROM Sistemas;
+GO
 
 
-/*Consulta para recuperar la marca:
+-- Consulta para recuperar la marca de un sistema
 SELECT
-    COD_Sistema,
-    NombreSistema,
+    COD_Sistema, RefSistema,
     DatosTecnicos.value(
         '(/Sistema/Marca/text())[1]',
         'NVARCHAR(100)'
     )
-AS Marca
-FROM Sistemas_Servicios;
-GO*/
+AS Marca FROM Sistemas;
+GO
 
 -- -------------------------------------------------------------------
 --      2.18. PRESUPUESTOS
 -- -------------------------------------------------------------------
 
-/* CREATE TABLE PRESUPUESTOS
+CREATE TABLE Presupuestos
 (
     COD_Presupuesto INT IDENTITY(1,1)
-        CONSTRAINT PK_PRESUPUESTOS PRIMARY KEY,
+        CONSTRAINT PK_Presupuestos PRIMARY KEY,
 
     COD_Propiedad INT NOT NULL,
     COD_Doc INT NOT NULL,
@@ -1401,11 +1377,12 @@ SELECT
     N'solo entrega en tienda'
 FROM ESTADOS_PRESUPUESTOS AS EP
 WHERE EP.EstadoPresu = N'ACEPTADO';
-GO */
+GO
 
 
 
-select * from PRESUPUESTOS
+SELECT * FROM Presupuestos;
+GO
 
 
 
