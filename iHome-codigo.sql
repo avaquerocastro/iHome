@@ -1284,7 +1284,7 @@ CREATE TABLE Presupuestos
 )
 WITH
     (SYSTEM_VERSIONING = ON
-        (HISTORY_TABLE = dbo.Planificacion_Historico)
+        (HISTORY_TABLE = dbo.Presupuestos_Historico)
     );
 GO
 
@@ -1623,11 +1623,11 @@ DECLARE @TipoRecuperador INT;
 
 SELECT @ProveedorSaltoki = COD_Proveedor
 FROM dbo.Proveedores
-WHERE Empresa = N'Saltoki';
+WHERE Empresa = 'Saltoki';
 
 SELECT @TipoRecuperador = COD_TipoSistema
 FROM dbo.Tipos_Sistemas
-WHERE TipoSistema = N'RECUPERADOR_CALOR'
+WHERE TipoSistema = 'RECUPERADOR_CALOR'
   AND Activo = 1;
 
 IF @ProveedorSaltoki IS NULL OR @TipoRecuperador IS NULL
@@ -1638,7 +1638,7 @@ EXEC dbo.SP_RegistrarSistema
     @COD_Proveedor = @ProveedorSaltoki,
     @COD_TipoSistema = @TipoRecuperador,
     @FechaInstalacion = '2026-11-01',
-    @DatosTecnicos = N'
+    @DatosTecnicos = '
         <Sistema>
             <Marca>SIBER</Marca>
             <Modelo>DF EVO 2</Modelo>
@@ -1653,7 +1653,7 @@ EXEC dbo.SP_RegistrarSistema
     @COD_Sistema = @NuevoSistema OUTPUT;
 
 PRINT CONCAT('Sistema registrado. COD_Sistema: ', @NuevoSistema);
-
+GO
 
 
 
@@ -1776,7 +1776,7 @@ DECLARE @EspacioCocina INT;
 
 SELECT @TipoFiltros = COD_TipoServicio
 FROM dbo.Tipos_Servicios
-WHERE TipoServicio = N'FILTROS'
+WHERE TipoServicio = 'FILTROS'
   AND Activo = 1;
 
 SELECT TOP (1) @EspacioCocina = E.COD_Espacio
@@ -1784,7 +1784,7 @@ FROM dbo.Espacios AS E
 INNER JOIN dbo.Tipos_Espacios AS TE
     ON E.COD_TipoEspacio = TE.COD_TipoEspacio
 WHERE E.COD_Propiedad = 1
-  AND TE.TipoEspacio = N'COCINA'
+  AND TE.TipoEspacio = 'COCINA'
 ORDER BY E.COD_Espacio;
 
 IF @TipoFiltros IS NULL
@@ -1798,7 +1798,7 @@ EXEC dbo.SP_RegistrarServicio
     @COD_Espacio = @EspacioCocina,
     @COD_Proveedor = @ProveedorSaltoki,
     @COD_TipoServicio = @TipoFiltros,
-    @Especificaciones = N'
+    @Especificaciones = '
         <Detalles>
             <Caracteristicas>
                 <Filtro>F7</Filtro>
@@ -1813,7 +1813,7 @@ EXEC dbo.SP_RegistrarServicio
     @COD_Servicio = @NuevoServicio OUTPUT;
 
 PRINT CONCAT('Servicio registrado. COD_Servicio: ', @NuevoServicio);
-
+GO
 
 
 
@@ -1992,7 +1992,7 @@ EXEC dbo.SP_ProgramarActividad
     @COD_Actividad = @NuevaActividad OUTPUT;
 
 PRINT CONCAT('Actividad registrada. COD_Actividad: ', @NuevaActividad);
-
+GO
 
 
 
@@ -2067,8 +2067,8 @@ GO
 -- INSERTAR DATOS DE PRUEBA
 EXEC dbo.SP_ModificarEstadoActividad
     @COD_Actividad = @NuevaActividad,
-    @EstadoPlan = N'EN CURSO';
-
+    @EstadoPlan = 'EN CURSO';
+GO
 
 
 
@@ -2162,9 +2162,10 @@ EXEC dbo.SP_RegistrarDocumento
     @TipoDoc = N'FICHA_TECNICA',
     @URL_Doc = N'https://ejemplo.com/documentacion/recuperador-calor.pdf',
     @COD_Doc = @NuevoDocumento OUTPUT;
+GO
 
 PRINT CONCAT('Documento registrado. COD_Doc: ', @NuevoDocumento);
-
+GO
 
 -- ******** COMPROBACIÓN FINAL
 SELECT
