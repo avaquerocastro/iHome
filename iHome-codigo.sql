@@ -1266,12 +1266,10 @@ CREATE TABLE Presupuestos
         END) PERSISTED,
     URL_Compra NVARCHAR(4000) NULL,
     Comentarios NVARCHAR(MAX) NULL,
-    RegistroInicial DATETIME2 NOT NULL
-        CONSTRAINT Df_Presupuestos_RegistroInicial
-        DEFAULT SYSDATETIME(),
-    RegistroFinal DATETIME2 NOT NULL
-        CONSTRAINT Df_Presupuestos_RegistroFinal
-        DEFAULT SYSDATETIME(),
+    RegistroInicial DATETIME2
+        GENERATED ALWAYS AS ROW START NOT NULL,
+	RegistroFinal DATETIME2
+		GENERATED ALWAYS AS ROW END NOT NULL,
     
     CONSTRAINT Ck_Presupuestos_Fechas
         CHECK (FechaFin >= FechaInicio),
@@ -1279,8 +1277,15 @@ CREATE TABLE Presupuestos
     CONSTRAINT Ck_Presupuestos_Pagos
         CHECK
             (ISNULL(Anticipo, 0) +
-            ISNULL(PagoParcial, 0) <= Importe)
-);
+            ISNULL(PagoParcial, 0) <= Importe),
+
+    PERIOD FOR SYSTEM_TIME
+		(RegistroInicial, RegistroFinal)
+)
+WITH
+    (SYSTEM_VERSIONING = ON
+        (HISTORY_TABLE = dbo.Planificacion_Historico)
+    );
 GO
 
 
@@ -1341,7 +1346,6 @@ SELECT * FROM Presupuestos;
 GO
 
 
-
 -- -------------------------------------------------------------------
 --      2.19. PLANIFICACION
 -- -------------------------------------------------------------------
@@ -1395,13 +1399,10 @@ CREATE TABLE Planificacion
     COD_Doc INT NULL
         CONSTRAINT Fk_Planificacion_Documentos FOREIGN KEY
         REFERENCES Documentos,
-    RegistroInicial DATETIME2 NOT NULL
-        CONSTRAINT Df_Planificacion_RegistroInicial
-        DEFAULT SYSDATETIME(),
-
-    RegistroFinal DATETIME2 NOT NULL
-        CONSTRAINT Df_Planificacion_RegistroFinal
-        DEFAULT SYSDATETIME(),
+	RegistroInicial DATETIME2
+        GENERATED ALWAYS AS ROW START NOT NULL,
+	RegistroFinal DATETIME2
+		GENERATED ALWAYS AS ROW END NOT NULL,
 
     CONSTRAINT Fk_Planificacion_Servicios
         FOREIGN KEY (COD_Servicio, COD_Propiedad)
@@ -1411,9 +1412,17 @@ CREATE TABLE Planificacion
         CHECK
         (FechaInicio IS NULL
             OR FechaFin IS NULL
-            OR FechaFin >= FechaInicio)
-);
+            OR FechaFin >= FechaInicio),
+
+    PERIOD FOR SYSTEM_TIME
+		(RegistroInicial, RegistroFinal)
+)
+WITH
+    (SYSTEM_VERSIONING = ON
+        (HISTORY_TABLE = dbo.Planificacion_Historico)
+    );
 GO
+
 
 
 CREATE UNIQUE INDEX Ux_Planificacion_RefActividad
@@ -1427,8 +1436,7 @@ ON Planificacion
 AFTER INSERT
 AS
 BEGIN
-    SET NOCOUNT ON;
-
+    
     UPDATE Planificacion
     SET RefActividad = CONCAT(
         Propiedades.RefPropiedad,
@@ -1475,23 +1483,15 @@ INSERT INTO Planificacion
     COD_Doc
 )
 SELECT
-    1,
-    31,
-    1,
-    2,
-    Estados_Planificacion.COD_EstadoPlan,
-    '2026-12-01',
-    '2026-12-01',
-    'OFERTA REPUESTOS SIBER',
-    '2026-10-01',
-    NULL
+    1, 31, 1, 2, Estados_Planificacion.COD_EstadoPlan,
+    '2026-12-01', '2026-12-01', 'OFERTA REPUESTOS SIBER',
+    '2026-10-01', NULL
 FROM Estados_Planificacion
 WHERE Estados_Planificacion.EstadoPlan = 'PROGRAMADO';
 GO
 
 
-
-SELECT * FROM PLANIFICACION;
+SELECT * FROM Planificacion;
 GO
 
 -- ===================================================================
