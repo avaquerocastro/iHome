@@ -1620,6 +1620,7 @@ GO
 DECLARE @NuevoSistema INT;
 DECLARE @ProveedorSaltoki INT;
 DECLARE @TipoRecuperador INT;
+DECLARE @NuevoDocumento INT;
 
 SELECT @ProveedorSaltoki = COD_Proveedor
 FROM dbo.Proveedores
@@ -1656,6 +1657,8 @@ PRINT CONCAT('Sistema registrado. COD_Sistema: ', @NuevoSistema);
 GO
 
 
+SELECT * FROM Sistemas;
+GO
 
 -- -------------------------------------------------------------------
 --      3.2. REGISTRAR UN SERVICIO
@@ -1767,12 +1770,12 @@ GO
 
 
 
-
-
 -- INSERTAR DATOS DE PRUEBA
 DECLARE @NuevoServicio INT;
 DECLARE @TipoFiltros INT;
 DECLARE @EspacioCocina INT;
+DECLARE @ProveedorSaltoki INT; 
+DECLARE @NuevoDocumento INT;
 
 SELECT @TipoFiltros = COD_TipoServicio
 FROM dbo.Tipos_Servicios
@@ -1816,7 +1819,8 @@ PRINT CONCAT('Servicio registrado. COD_Servicio: ', @NuevoServicio);
 GO
 
 
-
+SELECT * FROM Servicios;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -1969,10 +1973,13 @@ GO
 -- INSERTAR DATOS DE PRUEBA
 DECLARE @NuevaActividad INT;
 DECLARE @TipoInspeccion INT;
+DECLARE @NuevoSistema INT;
+DECLARE @NuevoServicio INT;
+DECLARE @NuevoDocumento INT;
 
 SELECT @TipoInspeccion = COD_TipoActividad
 FROM dbo.Tipos_Actividades
-WHERE TipoActividad = N'INSPECCIONAR'
+WHERE TipoActividad = 'INSPECCIONAR'
   AND Activo = 1;
 
 IF @TipoInspeccion IS NULL
@@ -1981,12 +1988,12 @@ IF @TipoInspeccion IS NULL
 EXEC dbo.SP_ProgramarActividad
     @COD_Propiedad = 1,
     @COD_TipoActividad = @TipoInspeccion,
-    @EstadoPlan = N'PROGRAMADO',
+    @EstadoPlan = 'PROGRAMADO',
     @FechaInicio = '2026-12-01 09:00:00',
     @FechaFin = '2026-12-01 11:00:00',
     @COD_Sistema = @NuevoSistema,
     @COD_Servicio = @NuevoServicio,
-    @Comentarios = N'Revisión del recuperador de calor y sustitución de filtros.',
+    @Comentarios = 'Revisión del recuperador de calor y sustitución de filtros.',
     @FechaRecordatorio = '2026-11-28 09:00:00',
     @COD_Doc = @NuevoDocumento,
     @COD_Actividad = @NuevaActividad OUTPUT;
@@ -1995,7 +2002,8 @@ PRINT CONCAT('Actividad registrada. COD_Actividad: ', @NuevaActividad);
 GO
 
 
-
+SELECT * FROM Planificacion;
+GO
 
 
 -- -------------------------------------------------------------------
@@ -2003,6 +2011,7 @@ GO
 -- -------------------------------------------------------------------
 /*Cambiar el estado de una actividad: pendiente, programada, en curso,
 finalizada, etc.*/
+
 
 CREATE OR ALTER PROCEDURE dbo.SP_ModificarEstadoActividad
     @COD_Actividad INT,
@@ -2033,8 +2042,7 @@ BEGIN
             THROW 50032, 'El estado indicado no existe o está inactivo.', 1;
 
         UPDATE dbo.Planificacion
-        SET COD_EstadoPlan = @COD_EstadoPlan,
-            RegistroFinal = SYSDATETIME()
+        SET COD_EstadoPlan = @COD_EstadoPlan
         WHERE COD_Actividad = @COD_Actividad;
 
         COMMIT TRANSACTION;
@@ -2045,6 +2053,7 @@ BEGIN
             EP.EstadoPlan,
             P.FechaInicio,
             P.FechaFin,
+            P.RegistroInicial,
             P.RegistroFinal
         FROM dbo.Planificacion AS P
         INNER JOIN dbo.Estados_Planificacion AS EP
@@ -2063,8 +2072,9 @@ GO
 
 
 
-
 -- INSERTAR DATOS DE PRUEBA
+DECLARE @NuevaActividad INT;
+
 EXEC dbo.SP_ModificarEstadoActividad
     @COD_Actividad = @NuevaActividad,
     @EstadoPlan = 'EN CURSO';
@@ -2072,7 +2082,8 @@ GO
 
 
 
-
+SELECT * FROM Planificacion;
+GO  
 
 
 
@@ -2159,8 +2170,8 @@ DECLARE @NuevoDocumento INT;
 
 EXEC dbo.SP_RegistrarDocumento
     @COD_Propiedad = 1,
-    @TipoDoc = N'FICHA_TECNICA',
-    @URL_Doc = N'https://ejemplo.com/documentacion/recuperador-calor.pdf',
+    @TipoDoc = 'FICHA_TECNICA',
+    @URL_Doc = 'https://ejemplo.com/documentacion/recuperador-calor.pdf',
     @COD_Doc = @NuevoDocumento OUTPUT;
 GO
 
@@ -2168,6 +2179,8 @@ PRINT CONCAT('Documento registrado. COD_Doc: ', @NuevoDocumento);
 GO
 
 -- ******** COMPROBACIÓN FINAL
+DECLARE @NuevaActividad INT;
+
 SELECT
     P.COD_Actividad,
     P.RefActividad,
@@ -2191,6 +2204,12 @@ LEFT JOIN dbo.Sistemas AS S
 LEFT JOIN dbo.Servicios AS SV
     ON P.COD_Servicio = SV.COD_Servicio
 WHERE P.COD_Actividad = @NuevaActividad;
+GO
+
+SELECT * FROM DOCUMENTOS;
+GO
+
+SELECT * FROM PLANIFICACION;
 GO
 
 
@@ -2378,8 +2397,8 @@ END;
 GO
 
 
-
-
+SELECT * FROM Sistemas;
+GO
 
 
 
@@ -2560,12 +2579,6 @@ BEGIN
 END;
 GO
 
-
-
-
-
-
-
 -- ===================================================================
 --      5. FUNCIONES
 -- ===================================================================
@@ -2595,6 +2608,27 @@ BEGIN
 END;
 GO
 
+-- EJEMPLO: CALCULAR SALDO DE UN PRESUPUESTO
+DECLARE @COD_Presupuesto INT;
+DECLARE @SaldoCalculado DECIMAL(14,2);
+
+SELECT TOP (1)
+    @COD_Presupuesto = COD_Presupuesto
+FROM dbo.Presupuestos
+ORDER BY COD_Presupuesto DESC;
+
+SET @SaldoCalculado =
+    dbo.FN_CalcularSaldoPresupuesto(@COD_Presupuesto);
+
+SELECT
+    @COD_Presupuesto AS COD_Presupuesto,
+    @SaldoCalculado AS SaldoCalculado;
+
+IF @SaldoCalculado IS NOT NULL
+    PRINT 'PRUEBA CORRECTA: La función devuelve un saldo.';
+ELSE
+    PRINT 'ERROR: No se ha podido calcular el saldo.';
+GO
 
 
 -- -------------------------------------------------------------------
@@ -2635,6 +2669,29 @@ BEGIN
 END;
 GO
 
+-- ejemplo: CALCULAR DÍAS HASTA UNA ACTIVIDAD
+
+DECLARE @COD_Actividad INT;
+DECLARE @DiasCalculados INT;
+
+SELECT TOP (1)
+    @COD_Actividad = COD_Actividad
+FROM dbo.Planificacion
+WHERE FechaInicio IS NOT NULL
+ORDER BY COD_Actividad DESC;
+
+SET @DiasCalculados =
+    dbo.FN_DiasHastaActividad(@COD_Actividad);
+
+SELECT
+    @COD_Actividad AS COD_Actividad,
+    @DiasCalculados AS DiasHastaActividad;
+
+IF @DiasCalculados IS NOT NULL
+    PRINT 'PRUEBA CORRECTA: La función calcula los días hasta la actividad.';
+ELSE
+    PRINT 'ERROR: No se ha podido calcular la fecha.';
+GO
 
 
 -- -------------------------------------------------------------------
@@ -2674,7 +2731,22 @@ RETURN
 );
 GO
 
----- ****** COMPROBACIÓN DE FUNCIONES:
+-- CONSULTAR LOS SISTEMAS DE UNA PROPIEDAD:
+DECLARE @COD_Propiedad INT;
+
+SELECT TOP (1)
+    @COD_Propiedad = COD_Propiedad
+FROM dbo.Sistemas
+ORDER BY COD_Propiedad;
+
+SELECT *
+FROM dbo.FN_SistemasPorPropiedad(@COD_Propiedad);
+
+PRINT CONCAT(
+    'Consulta realizada para la propiedad: ',
+    @COD_Propiedad
+);
+GO
 
 
 
@@ -2749,6 +2821,9 @@ LEFT JOIN dbo.Documentos AS D
 GO
 
 
+
+SELECT * FROM dbo.VW_InventarioTecnico;
+GO
 
 
 
@@ -2829,7 +2904,8 @@ LEFT JOIN dbo.Documentos AS D
 GO
 
 
-
+SELECT * FROM dbo.VW_PlanificacionActividades;
+GO
 
 -- -------------------------------------------------------------------
 --      6.3. HISTÓRICO DE SERVICIOS
@@ -2900,7 +2976,8 @@ LEFT JOIN dbo.Tipos_Documentos AS TD
 GO
 
 
-
+SELECT * FROM dbo.VW_ServiciosRegistrados;
+GO
 
 
 
@@ -2921,10 +2998,10 @@ LEFT JOIN Planificacion AS P
     ON EP.COD_EstadoPlan = P.COD_EstadoPlan
 WHERE EP.EstadoPlan IN
 (
-    N'PENDIENTE',
-    N'PROGRAMADO',
-    N'EN CURSO',
-    N'FINALIZADO'
+    'PENDIENTE',
+    'PROGRAMADO',
+    'EN CURSO',
+    'FINALIZADO'
 )
 GROUP BY
     EP.COD_EstadoPlan,
@@ -3283,5 +3360,3 @@ SELECT * FROM dbo.Planificacion;
 SELECT * FROM dbo.Presupuestos;
 REVERT;
 GO
-
-
